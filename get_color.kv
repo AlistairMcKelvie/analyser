@@ -1,0 +1,29 @@
+# 
+BoxLayout:
+    orientation: 'vertical'
+    Image:
+        id: image
+        size_hint_y: None
+        height: root.height * 0.75
+        canvas:
+            Color:
+                rgba: 0, 0, 1, 1
+        source: 'colors.png'
+        allow_stretch: True
+        keep_ratio: True
+        Painter:
+            size_hint_y: None
+            size_hint_x: None
+            size: self.parent.size
+            pos: self.parent.pos
+            id: painter
+
+    BoxLayout:
+        size_hint_y: None
+        height: root.height * 0.25
+        Button:
+            text: 'Select Area'
+            on_release: painter.return_points()
+        Button:
+            text: 'Clear'
+            on_release: painter.wipe_line()

@@ -119,19 +119,30 @@ def points_in_poly(poly, width, height):
         print 'y', y
         intersection_points = []
         for i in range(len(poly) - 1):
-            seg = (poly[i], poly[i + 1])
+            # Make seg with two points from the poly, sorted by y value
+            # We need the seg sorted as we need to know if the upper point
+            # lies on a y line but ignore lower points to aviod double 
+            # counting
+            seg = sorted([poly[i], poly[i + 1]], key=lambda tup: tup[1])
+            print seg
+            seg = tuple(seg)
             print 'seg', seg
             #import ipdb; ipdb.set_trace()
-            if intersects(((0, y), (width, y)), seg):
-                print 'found'
-                intersection_points.append(intersection_pt(((0, y), (width, y)), seg))
-        points_in_row = []
-        for intersect in intersection_points:
-            # only use the intersect points, as the segments will have corresponding
-            # points found anyway, don't include existing points
-            if intersect['point'] is not None and intersect['point'] not in points_in_row:
-                points_in_row.append(intersect['point'])
-        points_in_row.sort(key=lambda tup: tup[0])
-        print 'points_in_row', points_in_row
+            # Check if higher point lies on y line, and add that point as an
+            # intersection point if it does.
+            if seg[1][1] == y:
+                print 'on upper point'
+                if seg[1] not in intersection_points:
+                    intersection_points.append(seg[1])
+            # check if low point lies on y line, if so don't count it as an intersect
+            elif seg[0][1] == y:
+                print 'on lower point'
+                pass
+            elif intersects(((0, y), (width, y)), seg):
+                print 'on line'
+                pt = intersection_pt(((0, y), (width, y)), seg)
+                if pt['point'] is not None and pt['point'] not in intersection_points:
+                    intersection_points.append(pt['point'])
+            print 'intersection_points', intersection_points
     return points_in_poly
 

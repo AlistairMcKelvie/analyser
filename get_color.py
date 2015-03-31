@@ -10,7 +10,7 @@ from kivy.graphics.fbo import Fbo
 
 kivy.require('1.8.0')
 
-kv_file = get_color.kv
+kv_file = 'get_color.kv'
 
 class Painter(BoxLayout):
     def __init__(self, **kwargs):
@@ -57,7 +57,7 @@ class Painter(BoxLayout):
         self.canvas.clear()
         with self.canvas:
             Line(points=poly_pts_list, width=3, close=True)
-        #print len(points_in_poly(closed_poly_pts, 400, 700))
+        print points_in_poly(poly_pts, 400, 700)
 
     def wipe_line(self):
         self.canvas.clear()
@@ -74,7 +74,7 @@ class Painter(BoxLayout):
 
 class Main(App):
     def build(self):
-        return Builder.load_fil(get_color.kv)
+        return Builder.load_file(kv_file)
 
 
 if __name__ == '__main__':

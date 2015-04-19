@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import unittest
 import intersect
 
@@ -34,12 +35,12 @@ class test_intersect(unittest.TestCase):
         self.assertEqual(pt['point'], (4.5, 1))
 
     def test_points_in_poly(self):
-        poly = [(1, 1), (1, 3), (3, 5), (3, 1)]
+        poly = [(1, 1), (1, 3), (2, 3), (3, 4), (3, 1), (2, 1), (2, 0)]
         x = 6
         y = 6
-        self.assertEqual([(1, 1), (2, 1), (3, 1), (1, 2), (2, 2), (3, 2), 
-                          (1, 3), (2, 3), (3, 3), (2, 4), (3, 4), (3, 5)],
-                         intersect.points_in_poly(poly, x, y))
+        self.assertEqual([(2, 0), (1, 1), (2, 1), (3, 1), (1, 2), (2, 2), (3, 2), 
+                          (1, 3), (2, 3), (3, 3), (3, 4)].sort(),
+                         intersect.points_in_poly(poly, x, y).sort())
 
 if __name__ == '__main__':
     unittest.main()

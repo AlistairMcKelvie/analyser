@@ -107,16 +107,14 @@ def intersection_pt(seg1=(), seg2=()):
             y = a1 * x + c1
             return {'point': (x, y), 'seg': None}
 
-def points_in_poly(poly, width, height):
+def points_in_poly(poly, width, height, interval=1.0):
     '''returns all the points that lie inside a polygon, including those which lie
     on the boundary. Points are a resolution of one unit, starting from the left 
     of the polygon.'''
     # add first point to end to close path
     poly.append(poly[0])
-    print poly
-    segs_list = []
+    pointsInside = []
     for y in range(height):
-        print 'y', y
         intersection_points = []
         for i in range(len(poly) - 1):
             # Make seg with two points from the poly, sorted by y value
@@ -124,25 +122,55 @@ def points_in_poly(poly, width, height):
             # lies on a y line but ignore lower points to aviod double 
             # counting
             seg = sorted([poly[i], poly[i + 1]], key=lambda tup: tup[1])
-            print seg
             seg = tuple(seg)
             print 'seg', seg
-            #import ipdb; ipdb.set_trace()
             # Check if higher point lies on y line, and add that point as an
             # intersection point if it does.
-            if seg[1][1] == y:
-                print 'on upper point'
-                if seg[1] not in intersection_points:
+            if intersects(((0, y), (width, y)), seg):
+                intersect = intersection_pt(((0, y), (width, y)), seg)
+                if intersect['seg'] is not None:
+                    print 'on line'
+                    print intersect['seg']
+                    intersection_points.append(intersect['seg'][0])
+                    intersection_points.append(intersect['seg'][1])
+                elif seg[1][1] == y:
+                    print 'on upper point'
                     intersection_points.append(seg[1])
-            # check if low point lies on y line, if so don't count it as an intersect
-            elif seg[0][1] == y:
-                print 'on lower point'
-                pass
-            elif intersects(((0, y), (width, y)), seg):
-                print 'on line'
-                pt = intersection_pt(((0, y), (width, y)), seg)
-                if pt['point'] is not None and pt['point'] not in intersection_points:
-                    intersection_points.append(pt['point'])
-            print 'intersection_points', intersection_points
-    return points_in_poly
+                elif seg[0][1] == y:
+                    print 'on lower point'
+                    pass
+                else:
+                    print 'normal intersection'
+                    intersection_points.append(intersect['point'])
+            print '--------'
+        print 'intersection_points', intersection_points
+        rowPoints = __addInsidePoints__(intersection_points, interval)
+        if rowPoints is not None:
+            pointsInside.extend(rowPoints)
+    print pointsInside
+    return pointsInside
 
+
+def __addInsidePoints__(intersectionPoints, interval=1.0):
+    '''Takes a list of points from the point_in_poly function,
+    sorts it by x value, and returns it with points add between
+    pairs of points at the specified interval, representing the 
+    points inside the poly in that line.'''
+    if len(intersectionPoints) % 2 != 0:
+        raise RuntimeError('intersectionPoints list must be an even length,'
+                           'there is a problem with the list produced by '
+                           'points in poly')
+    intersectionPoints.sort(key=lambda x: x[0])
+    filledPoints = []
+    while intersectionPoints:
+        filledPoints.append(intersectionPoints.pop(0))
+        rightPt = intersectionPoints.pop(0)
+        if rightPt == filledPoints[-1]:
+            # if right point equals left point, this is a double
+            # point at top vertex, only want to include on one of 
+            # this pair, so go to next loop
+            continue
+        while filledPoints[-1][0] + interval <  rightPt[0]:
+            filledPoints.append((filledPoints[-1][0] + interval, filledPoints[-1][1]))
+        filledPoints.append(rightPt)
+    return filledPoints

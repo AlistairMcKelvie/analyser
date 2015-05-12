@@ -1,4 +1,5 @@
 from __future__ import division
+import math
 
 def point_on_segment(seg=(), pt=()):
     pt_x_between = (pt[0] <= max(seg[0][0], seg[1][0]) and
@@ -107,14 +108,16 @@ def intersection_pt(seg1=(), seg2=()):
             y = a1 * x + c1
             return {'point': (x, y), 'seg': None}
 
-def points_in_poly(poly, width, height, interval=1.0):
+def points_in_poly(poly, width, height, interval=1):
     '''returns all the points that lie inside a polygon, including those which lie
     on the boundary. Points are a resolution of one unit, starting from the left 
     of the polygon.'''
+    width = int(math.ceil(width))
+    height = int(math.ceil(height))
     # add first point to end to close path
     poly.append(poly[0])
     pointsInside = []
-    for y in range(height):
+    for y in range(0, height, interval):
         intersection_points = []
         for i in range(len(poly) - 1):
             # Make seg with two points from the poly, sorted by y value
@@ -123,31 +126,31 @@ def points_in_poly(poly, width, height, interval=1.0):
             # counting
             seg = sorted([poly[i], poly[i + 1]], key=lambda tup: tup[1])
             seg = tuple(seg)
-            print 'seg', seg
+            #print 'seg', seg
             # Check if higher point lies on y line, and add that point as an
             # intersection point if it does.
             if intersects(((0, y), (width, y)), seg):
                 intersect = intersection_pt(((0, y), (width, y)), seg)
                 if intersect['seg'] is not None:
-                    print 'on line'
-                    print intersect['seg']
+                    #print 'on line'
+                    #print intersect['seg']
                     intersection_points.append(intersect['seg'][0])
                     intersection_points.append(intersect['seg'][1])
                 elif seg[1][1] == y:
-                    print 'on upper point'
+                    #print 'on upper point'
                     intersection_points.append(seg[1])
                 elif seg[0][1] == y:
-                    print 'on lower point'
+                    #print 'on lower point'
                     pass
                 else:
-                    print 'normal intersection'
+                    #print 'normal intersection'
                     intersection_points.append(intersect['point'])
-            print '--------'
-        print 'intersection_points', intersection_points
+            #print '--------'
+        #print 'intersection_points', intersection_points
         rowPoints = __addInsidePoints__(intersection_points, interval)
         if rowPoints is not None:
             pointsInside.extend(rowPoints)
-    print pointsInside
+    #print pointsInside
     return pointsInside
 
 

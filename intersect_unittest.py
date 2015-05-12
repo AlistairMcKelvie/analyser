@@ -42,5 +42,12 @@ class test_intersect(unittest.TestCase):
                           (1, 3), (2, 3), (3, 3), (3, 4)].sort(),
                          intersect.points_in_poly(poly, x, y).sort())
 
+    def test_points_in_poly_2(self):
+        poly = [(3, 1), (2, 1), (2, 3), (1, 2), (1, 3), (3, 3)]
+        x = 6
+        y = 6
+        self.assertEqual([(2, 1), (3, 1), (1, 2), (2, 2), (3, 2), (3, 1), (3, 2), (3, 3)].sort(),
+                         intersect.points_in_poly(poly, x, y).sort())
+
 if __name__ == '__main__':
     unittest.main()

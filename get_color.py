@@ -8,7 +8,8 @@ from kivy.graphics.vertex_instructions import Line
 from kivy.graphics import Color
 from kivy.graphics.fbo import Fbo
 
-kivy.require('1.8.0')
+
+kivy.require('1.9.0')
 
 kv_file = 'get_color.kv'
 
@@ -57,19 +58,42 @@ class Painter(BoxLayout):
         self.canvas.clear()
         with self.canvas:
             Line(points=poly_pts_list, width=3, close=True)
-        print points_in_poly(poly_pts, 400, 700)
+        width = self.parent.parent.width
+        height = self.parent.parent.height
+        print self.width
+        print sorted(poly_pts, key=lambda x: x[1])
+        pointsInPoly = points_in_poly(poly_pts, width, height)
+        #pointsInPoly.sort(
+        print len(pointsInPoly)
+        pointsInPolyList = [item for pair in pointsInPoly for item in pair]
+        i = 0
+        red = 0
+        green = 0
+        blue = 0
+        alpha = 0
+
+        for point in pointsInPoly:
+            pixel = self.get_pixel_color(point[0], point[1])
+            red += pixel[0]
+            green += pixel[1]
+            blue += pixel[2]
+            alpha += pixel[3]
+            i += 1
+        i = float(i)
+        avePixel = [red / i, green / i, blue / i, alpha / i]
+        print avePixel
+        with self.canvas:
+            Line(points=pointsInPolyList)
 
     def wipe_line(self):
         self.canvas.clear()
 
     def get_pixel_color(self, x, y):
-        image = self.parent.ids['image']
+        image = self.parent.parent.ids['image']
         fbo = Fbo(texture=image.texture, size=image.texture.size)
-        offset_x = (image.width - image.norm_image_size[0]) / 2
-        offset_y = (image.height - image.norm_image_size[1]) / 2
-        scaled_x = x * (image.texture.width / image.norm_image_size[0])
-        scaled_y = y * (image.texture.height / image.norm_image_size[1])
-        return fbo.get_pixel_color(scaled_x - offset_x, scaled_y - offset_y)
+        scaled_x = x * (image.texture.width / float(image.width - image.x))
+        scaled_y = image.texture.height - y * (image.texture.height / float(image.height + image.y))
+        return fbo.get_pixel_color(scaled_x, scaled_y)
 
 
 class Main(App):

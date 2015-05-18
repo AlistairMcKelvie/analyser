@@ -117,7 +117,9 @@ def points_in_poly(poly, width, height, interval=1):
     # add first point to end to close path
     poly.append(poly[0])
     pointsInside = []
+    #print 'poly', poly
     for y in range(0, height, interval):
+        #print 'y', y
         intersection_points = []
         for i in range(len(poly) - 1):
             # Make seg with two points from the poly, sorted by y value
@@ -126,14 +128,13 @@ def points_in_poly(poly, width, height, interval=1):
             # counting
             seg = sorted([poly[i], poly[i + 1]], key=lambda tup: tup[1])
             seg = tuple(seg)
-            #print 'seg', seg
+            #print seg
             # Check if higher point lies on y line, and add that point as an
             # intersection point if it does.
             if intersects(((0, y), (width, y)), seg):
                 intersect = intersection_pt(((0, y), (width, y)), seg)
                 if intersect['seg'] is not None:
-                    #print 'on line'
-                    #print intersect['seg']
+                    #print 'seg'
                     intersection_points.append(intersect['seg'][0])
                     intersection_points.append(intersect['seg'][1])
                 elif seg[1][1] == y:
@@ -145,8 +146,10 @@ def points_in_poly(poly, width, height, interval=1):
                 else:
                     #print 'normal intersection'
                     intersection_points.append(intersect['point'])
+                #print '**IP**', intersection_points
+
             #print '--------'
-        #print 'intersection_points', intersection_points
+        #print poly
         rowPoints = __addInsidePoints__(intersection_points, interval)
         if rowPoints is not None:
             pointsInside.extend(rowPoints)
@@ -160,7 +163,7 @@ def __addInsidePoints__(intersectionPoints, interval=1.0):
     pairs of points at the specified interval, representing the 
     points inside the poly in that line.'''
     if len(intersectionPoints) % 2 != 0:
-        raise RuntimeError('intersectionPoints list must be an even length,'
+        raise RuntimeError('intersectionPoints list must be an even length, '
                            'there is a problem with the list produced by '
                            'points in poly')
     intersectionPoints.sort(key=lambda x: x[0])

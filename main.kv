@@ -1,0 +1,42 @@
+#
+<AnalyserScreen>
+    canvas.before:
+        Rectangle:
+            id: image
+            source: 'rgb.png'
+            size: (root.width, root.height * 0.75) 
+            pos: (root.x, root.height * 0.25)
+    Painter:
+        id: painter
+        height: root.height * 0.75
+        y: root.height * 0.25
+        width: root.width
+    Label:
+        id: rgbLabel
+        color: 0, 0, 0, 1
+        y: root.y + 110
+        x: 110
+        font_size: 20
+    BoxLayout:
+        width: root.width
+        height: root.height * 0.25
+        Button:
+            text: 'Select Area'
+            on_release: root.getColor()
+        Button:
+            text: 'Go to graph'
+            on_release: app.goto_graph()
+
+<GraphScreen>:
+    BoxLayout:
+        size: root.size
+        orientation: 'vertical'
+        MyGraph:
+            id: graph
+        Button:
+            id: analyer_btn
+            size_hint_y: None
+            height: root.height * 0.25
+            text: 'Go to analyser'
+            on_release: app.goto_analyser() 
+

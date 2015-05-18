@@ -2,6 +2,7 @@ import kivy
 
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.widget import Widget
 from kivy.lang import Builder
 from intersect import intersects, intersection_pt, points_in_poly
 from kivy.graphics.vertex_instructions import Line
@@ -13,19 +14,22 @@ kivy.require('1.9.0')
 
 kv_file = 'get_color.kv'
 
-class Painter(BoxLayout):
+class Painter(Widget):
     def __init__(self, **kwargs):
         super(Painter, self).__init__(**kwargs)
 
+
     def on_touch_down(self, touch):
         self.canvas.clear()
-        self.points_list = []
-        with self.canvas:
+        self.points_list = [(touch.x, touch.y)]
+        with self.canvas.before:
             touch.ud['line'] = Line(points=(touch.x, touch.y), width=3)
+
 
     def on_touch_move(self, touch):
         touch.ud['line'].points += [touch.x, touch.y]
         self.points_list.append((touch.x, touch.y))
+
 
     def return_points(self):
         intersection_found = False
@@ -85,15 +89,38 @@ class Painter(BoxLayout):
         with self.canvas:
             Line(points=pointsInPolyList)
 
+
     def wipe_line(self):
         self.canvas.clear()
 
+
     def get_pixel_color(self, x, y):
-        image = self.parent.parent.ids['image']
+        image = self.parent.parent.parent.ids['image']
         fbo = Fbo(texture=image.texture, size=image.texture.size)
         scaled_x = x * (image.texture.width / float(image.width - image.x))
         scaled_y = image.texture.height - y * (image.texture.height / float(image.height + image.y))
         return fbo.get_pixel_color(scaled_x, scaled_y)
+
+
+    def DEBUGTestGetPixel(self):
+        image = self.parent.parent.parent.ids['image']
+        fbo = Fbo(texture=image.texture, size=image.texture.size)
+        for y in range(int(image.height)):
+            for x in range(int(image.width)):
+                print 'x', x
+                print 'y', y
+                scaled_x = x * (image.texture.width / float(image.width - image.x))
+                scaled_y = image.texture.height - 1 - y * (image.texture.height / float(image.height + image.y))
+                print 'scaled x', scaled_x
+                print 'scaled y', scaled_y
+                gpc = fbo.get_pixel_color(scaled_x, scaled_y)
+                print 'get pixel color', gpc
+                firstPixelVal = (image.texture.width * int(scaled_y) + int(scaled_x)) * 4
+                arrayVal = [ord(i) for i in fbo.pixels[firstPixelVal:firstPixelVal+4]]
+                print 'array pixel', arrayVal
+                print '~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                if arrayVal != gpc:
+                    import ipdb; ipdb.set_trace()
 
 
 class Main(App):

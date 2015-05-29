@@ -5,9 +5,12 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.widget import Widget
 from kivy.lang import Builder
 from intersect import intersects, intersection_pt, points_in_poly
-from kivy.graphics.vertex_instructions import Line
+from kivy.graphics.vertex_instructions import Line, Ellipse, Rectangle
 from kivy.graphics import Color
 from kivy.graphics.fbo import Fbo
+from kivy.graphics.instructions import InstructionGroup
+
+from PIL import Image as PILImage
 
 
 kivy.require('1.9.0')
@@ -17,18 +20,49 @@ kv_file = 'get_color.kv'
 class Painter(Widget):
     def __init__(self, **kwargs):
         super(Painter, self).__init__(**kwargs)
+        self.h = 30
+        self.selection = 1
+        self.canvasIntructions = [None] * 15
+        self.xList = [None] * 15
+        self.yList = [None] * 15
 
 
     def on_touch_down(self, touch):
-        self.canvas.clear()
-        self.points_list = [(touch.x, touch.y)]
-        with self.canvas.before:
-            touch.ud['line'] = Line(points=(touch.x, touch.y), width=3)
-
+        if self.collide_point(*touch.pos):
+            if self.canvasIntructions[self.selection - 1]:
+                self.canvasIntructions[self.selection - 1].clear()
+            self.points_list = [(touch.x, touch.y)]
+            self.canvasIntructions[self.selection - 1] = InstructionGroup()
+            self.canvasIntructions[self.selection - 1].add(Color(0, 0, 0, 0.25))
+            h = self.h
+            touch.ud['Rectangle'] = Rectangle(pos=(touch.x - h / 2, touch.y - h / 2), size = (h, h))
+            self.canvasIntructions[self.selection - 1].add(touch.ud['Rectangle'])
+            self.canvas.add(self.canvasIntructions[self.selection - 1])
 
     def on_touch_move(self, touch):
-        touch.ud['line'].points += [touch.x, touch.y]
-        self.points_list.append((touch.x, touch.y))
+        if self.collide_point(*touch.pos):
+            h = self.h
+            touch.ud['Rectangle'].pos = (touch.x - h / 2, touch.y - h / 2)
+
+
+    def on_touch_up(self, touch):
+        if self.collide_point(*touch.pos):
+            self.xList[self.selection - 1] = touch.x
+            self.yList[self.selection - 1] = touch.y
+
+
+
+    def readRectangle(self):
+        x = self.xList[self.selection - 1]
+        y = self.yList[self.selection - 1]
+        image = PILImage.open('colors.png')
+        import ipdb; ipdb.set_trace()
+        fbo = Fbo(texture=image.texture, size=image.texture.size)
+        scaled_x = x * (image.texture.width / float(image.width - image.x))
+        scaled_y = image.texture.height - y * (image.texture.height / float(image.height + image.y))
+        print fbo.get_pixel_color(scaled_x, scaled_y)
+        
+        
 
 
     def return_points(self):
@@ -63,7 +97,7 @@ class Painter(Widget):
         with self.canvas:
             Line(points=poly_pts_list, width=3, close=True)
         width = self.parent.parent.width
-        height = self.parent.pa:rent.height
+        height = self.parent.parent.height
         print self.width
         print sorted(poly_pts, key=lambda x: x[1])
         pointsInPoly = points_in_poly(poly_pts, width, height)

@@ -13,29 +13,73 @@ from kivy.uix.button import Button
 from kivy.graphics.vertex_instructions import Line, Rectangle
 from kivy.graphics import Color
 from kivy.graphics.fbo import Fbo
+from kivy.graphics.instructions import InstructionGroup
+
 from intersect import intersects, intersection_pt, points_in_poly
 import os.path
 from PIL import Image as PILImage
+from PIL.ImageStat import Stat as imageStat
 kv_file = 'Main.kv'
 
 
 class Painter(Widget):
     def __init__(self, **kwargs):
         super(Painter, self).__init__(**kwargs)
+        self.boxHeight = 20
+        self.boxNo = 1
+        self.instructions = [InstructionGroup() for _ in range(15)]
+        self.xList = [None] * 15
+        self.yList = [None] * 15
 
 
     def on_touch_down(self, touch):
-        self.points_list = [(touch.x, max(touch.y, self.y))]
-        self.canvas.clear()
-        self.parent.refToPainterCanvas = self.canvas.proxy_ref
-        with self.canvas:
-            Color(0, 0, 0, 1)
-            touch.ud['line'] = Line(points=(touch.x, touch.y), width=3)
+        if self.collide_point(*touch.pos):
+            #self.points_list = [(touch.x, max(touch.y, self.y))]
+            self.instructions[self.boxNo - 1].clear()
+            self.parent.refToPainterCanvas = self.canvas.proxy_ref
+            '''
+            with self.canvas:
+                Color(0, 0, 0, 1)
+                touch.ud['line'] = Line(points=(touch.x, touch.y), width=3)
+            '''
+            h = self.boxHeight
+            self.instructions[self.boxNo - 1].add(Color(0, 0, 0, 0.25))
+            touch.ud['Rectangle'] = Rectangle(pos=(touch.x - h / 2, touch.y  - h / 2),
+                                              size=(h, h))
+            self.instructions[self.boxNo - 1].add(touch.ud['Rectangle'])
+            self.canvas.add(self.instructions[self.boxNo - 1])
 
 
     def on_touch_move(self, touch):
-        touch.ud['line'].points += [touch.x, max(touch.y, self.y)]
-        self.points_list.append((touch.x, max(touch.y, self.y)))
+        if self.collide_point(*touch.pos):
+            #touch.ud['line'].points += [touch.x, max(touch.y, self.y)]
+            #self.points_list.append((touch.x, max(touch.y, self.y)))
+            h = self.boxHeight
+            touch.ud['Rectangle'].pos = (touch.x - h / 2, touch.y - h / 2)
+
+
+    def on_touch_up(self, touch):
+        if self.collide_point(*touch.pos):
+            self.xList[self.boxNo - 1] = touch.x
+            self.yList[self.boxNo - 1] = touch.y
+
+
+    def readRectangle(self, imageFile):
+        x = self.xList[self.boxNo - 1]
+        y = self.yList[self.boxNo - 1]
+        image = PILImage.open(imageFile)
+        image = image.transpose(PILImage.FLIP_TOP_BOTTOM)
+        #fbo = Fbo(texture=image.textur size=image..size)
+        scaled_x = int(x * (image.size[0] / float(self.width)))
+        scaled_y = int((y - self.y) * (image.size[1] / float(self.height)))
+        scaled_boxWidth = int(self.boxHeight * (image.size[0] / float(self.width)))
+        scaled_boxHeight = int(self.boxHeight * (image.size[1] / float(self.height)))
+        #print fbo.get_pixel_color(scaled_x, scaled_y)
+        croppedImage = image.crop((scaled_x, scaled_y,
+                                   scaled_x + scaled_boxWidth, scaled_y + scaled_boxHeight))
+        rgba = imageStat(croppedImage).mean
+        return [rgba[0], rgba[1], rgba[2], rgba[3]]
+
 
 
     def getColor(self, imageFile):
@@ -112,8 +156,9 @@ class AnalyserScreen(Widget):
     def __init__(self, **kwargs):
         super(AnalyserScreen, self).__init__(**kwargs)
 
-    def getColor(self, imageFile):
-        color = self.ids['painter'].getColor(imageFile)
+
+    def readRectangle(self, imageFile):
+        color = self.ids['painter'].readRectangle(imageFile)
         lStr = ('R: {0:05.1f}   G: {1:05.1f}   B: {2:05.1f}   A: {3:05.1f}')
         self.ids['rgbLabel'].text = lStr.format(color[0], color[1], color[2], color[3])
 

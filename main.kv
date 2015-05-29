@@ -11,14 +11,106 @@
         size: self.texture_size
         y: painter.y
         font_size: root.height * 0.05
+
     BoxLayout:
         width: root.width
-        height: root.height * 0.25
+        y: root.height * 0.2
+        height: root.height * 0.05
+        ToggleButton:
+            text: '1'
+            group: 'select'
+            state: 'down'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 1
+        ToggleButton:
+            text: '2'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 2
+        ToggleButton:
+            text: '3'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 3
+        ToggleButton:
+            text: '4'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 4
+        ToggleButton:
+            text: '5'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 5
+
+    BoxLayout:
+        width: root.width
+        y: root.height * 0.15
+        height: root.height * 0.05
+        ToggleButton:
+            text: '6'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 6
+        ToggleButton:
+            text: '7'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 7
+        ToggleButton:
+            text: '8'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 8
+        ToggleButton:
+            text: '9'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 9
+        ToggleButton:
+            text: '10'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 10
+
+    BoxLayout:
+        width: root.width
+        y: root.height * 0.1
+        height: root.height * 0.05
+        ToggleButton:
+            text: '11'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 11
+        ToggleButton:
+            text: '12'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 12
+        ToggleButton:
+            text: '13'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 13
+        ToggleButton:
+            text: '14'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 14
+        ToggleButton:
+            text: '15'
+            group: 'select'
+            allow_no_boxNo: False
+            on_press: painter.boxNo = 15
+
+    BoxLayout:
+        width: root.width
+        height: root.height * 0.1
         Button:
             text: 'Select Area'
             on_release: 
                 print app.imageFile
-                root.getColor(app.imageFile)
+                root.readRectangle(app.imageFile)
         Button:
             text: 'Go to graph'
             on_release: app.goto_graph()
@@ -43,7 +135,8 @@
         FileChooserListView:
             id: filechooser
             #path: '/Users/alistairmckelvie/Projects/analyzer'
-            path: '/mnt/sdcard/DCIM'
+            #path: '/mnt/sdcard/DCIM'
+            path: 'D:/Projects/analyser'
         Button:
             size_hint_y: 0.1
             text: 'Load'

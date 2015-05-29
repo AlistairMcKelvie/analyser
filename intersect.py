@@ -108,6 +108,7 @@ def intersection_pt(seg1=(), seg2=()):
             y = a1 * x + c1
             return {'point': (x, y), 'seg': None}
 
+
 def points_in_poly(poly, width, height, interval=1):
     '''returns all the points that lie inside a polygon, including those which lie
     on the boundary. Points are a resolution of one unit, starting from the left 
@@ -146,7 +147,6 @@ def points_in_poly(poly, width, height, interval=1):
                 else:
                     #print 'normal intersection'
                     intersection_points.append(intersect['point'])
-                #print '**IP**', intersection_points
 
             #print '--------'
         #print poly

@@ -33,7 +33,7 @@ version = 1.9.0
 
 # (list) Application requirements
 # comma seperated e.g. requirements = sqlite3,kivy
-requirements = kivy
+requirements = kivy, pil
 
 # (list) Garden requirements
 #garden_requirements =

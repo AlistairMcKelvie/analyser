@@ -1,11 +1,5 @@
 #
-<AnalyserScreen>
-    canvas.before:
-        Rectangle:
-            id: image
-            source: 'rgb.png'
-            size: (root.width, root.height * 0.75) 
-            pos: (root.x, root.height * 0.25)
+<AnalyserScreen>:
     Painter:
         id: painter
         height: root.height * 0.75
@@ -13,7 +7,7 @@
         width: root.width
     Label:
         id: rgbLabel
-        color: 0, 0, 0, 1
+        color: 0.5, 0.5, 0.5, 1
         size: self.texture_size
         y: painter.y
         font_size: root.height * 0.05
@@ -22,7 +16,9 @@
         height: root.height * 0.25
         Button:
             text: 'Select Area'
-            on_release: root.getColor()
+            on_release: 
+                print app.imageFile
+                root.getColor(app.imageFile)
         Button:
             text: 'Go to graph'
             on_release: app.goto_graph()
@@ -40,3 +36,15 @@
             text: 'Go to analyser'
             on_release: app.goto_analyser() 
 
+<FileChooserScreen>:
+    BoxLayout:
+        size: root.size
+        orientation: 'vertical'
+        FileChooserListView:
+            id: filechooser
+            #path: '/Users/alistairmckelvie/Projects/analyzer'
+            path: '/mnt/sdcard/DCIM'
+        Button:
+            size_hint_y: 0.1
+            text: 'Load'
+            on_release: app.goto_analyser(filechooser.selection[0])

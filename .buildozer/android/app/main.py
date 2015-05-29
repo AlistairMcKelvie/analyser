@@ -13,14 +13,16 @@ from kivy.uix.button import Button
 from kivy.graphics.vertex_instructions import Line, Rectangle
 from kivy.graphics import Color
 from kivy.graphics.fbo import Fbo
-
 from intersect import intersects, intersection_pt, points_in_poly
+import os.path
+from PIL import Image as PILImage
 kv_file = 'Main.kv'
-imageFile = 'rgb.png'
+
 
 class Painter(Widget):
     def __init__(self, **kwargs):
         super(Painter, self).__init__(**kwargs)
+
 
     def on_touch_down(self, touch):
         self.points_list = [(touch.x, max(touch.y, self.y))]
@@ -36,7 +38,7 @@ class Painter(Widget):
         self.points_list.append((touch.x, max(touch.y, self.y)))
 
 
-    def getColor(self):
+    def getColor(self, imageFile):
         intersection_found = False
         self.points_list = deleteDuplicatesFromList(self.points_list)
         for a in xrange(len(self.points_list)-2):
@@ -69,25 +71,22 @@ class Painter(Widget):
             Line(points=poly_pts_list, width=3, close=True)
 
         pointsInPoly = points_in_poly(poly_pts, self.width, self.height + self.y, 4)
-        averageColor = self.getAverageColor(pointsInPoly)
+        averageColor = self.getAverageColor(pointsInPoly, imageFile)
         with self.canvas:
             Color(0, 0, 0, 0.5)
             Line(points=[item for pair in pointsInPoly for item in pair], width=3 )
         return averageColor
 
-    def clearCanvas():
-        self.canvas.clear()
-
-
-    def getAverageColor(self, pointsInPoly):
-        texture = Image(self.parent.imageFile).texture
+    
+    def getAverageColor(self, pointsInPoly, imageFile):
+        texture = Image(imageFile).texture
         fbo = Fbo(texture=texture, size=texture.size)
         heightRatio = fbo.size[1] / float(self.height)
         widthRatio = fbo.size[0] / float(self.width)
         scaledPointsInPoly = set()
         for point in pointsInPoly:
             scaledPointsInPoly.add((int((point[0] - self.x) * widthRatio),
-                                    int((point[1] - self.y) * heightRatio)))
+                                    int((self.height-(point[1] - self.y)) * heightRatio)))
 
         pixels = [None] * len(scaledPointsInPoly)
         i = 0
@@ -112,16 +111,18 @@ def deleteDuplicatesFromList(l):
 class AnalyserScreen(Widget):
     def __init__(self, **kwargs):
         super(AnalyserScreen, self).__init__(**kwargs)
-        self.imageFile = imageFile
 
-    def getColor(self):
-        color = self.ids['painter'].getColor()
+    def getColor(self, imageFile):
+        color = self.ids['painter'].getColor(imageFile)
         lStr = ('R: {0:05.1f}   G: {1:05.1f}   B: {2:05.1f}   A: {3:05.1f}')
         self.ids['rgbLabel'].text = lStr.format(color[0], color[1], color[2], color[3])
 
         
-
 class GraphScreen(Widget):
+    pass
+
+
+class FileChooserScreen(Widget):
     pass
 
 
@@ -130,17 +131,37 @@ class Main(App):
         Builder.load_file(kv_file)
         self.graphScreen = GraphScreen()
         self.analyserScreen = AnalyserScreen()
-        return self.analyserScreen
+        self.fileChooserScreen = FileChooserScreen()
+        return self.fileChooserScreen
     
         
-    def goto_analyser(self):
+    def goto_analyser(self, imageFile=None):
+        Window.remove_widget(self.fileChooserScreen)
         Window.remove_widget(self.graphScreen)
         Window.add_widget(self.analyserScreen)
+        if imageFile is not None:
+            self.imageFile = self.resizeImage(imageFile)
+            self.analyserScreen.canvas.before.clear()
+            with self.analyserScreen.canvas.before:
+                print self.analyserScreen.height
+                Rectangle(source=self.imageFile,
+                          size=(self.analyserScreen.width, self.analyserScreen.height*0.75),
+                          pos=(self.analyserScreen.x, self.analyserScreen.height*0.25))
 
 
     def goto_graph(self):
         Window.remove_widget(self.analyserScreen)
         Window.add_widget(self.graphScreen)
+
+    def resizeImage(self, imageFile):
+        basewidth = 300
+        img = PILImage.open(imageFile)
+        wpercent = (basewidth / float(img.size[0]))
+        hsize = int((float(img.size[1]) * float(wpercent)))
+        img = img.resize((basewidth, hsize), PILImage.ANTIALIAS)
+        nFile = os.path.dirname(imageFile) + '/resized_' + os.path.basename(imageFile)
+        img.save(nFile)
+        return nFile
 
 
 if __name__ == '__main__':

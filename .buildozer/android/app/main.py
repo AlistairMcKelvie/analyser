@@ -10,7 +10,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 
-from kivy.graphics.vertex_instructions import Line, Rectangle
+from kivy.graphics.vertex_instructions import Line, Rectangle, Ellipse
 from kivy.graphics import Color
 from kivy.graphics.fbo import Fbo
 from intersect import intersects, intersection_pt, points_in_poly
@@ -22,19 +22,21 @@ kv_file = 'Main.kv'
 class Painter(Widget):
     def __init__(self, **kwargs):
         super(Painter, self).__init__(**kwargs)
-
+        self.r = 30
 
     def on_touch_down(self, touch):
         self.points_list = [(touch.x, max(touch.y, self.y))]
-        self.canvas.clear()
+        #self.canvas.clear()
         self.parent.refToPainterCanvas = self.canvas.proxy_ref
         with self.canvas:
             Color(0, 0, 0, 1)
-            touch.ud['line'] = Line(points=(touch.x, touch.y), width=3)
+            #touch.ud['line'] = Line(points=(touch.x, touch.y), width=3)
+            touch.ud['Ellipse'] = Ellipse(pos=(touch.x - self.r, touch.y - self.r), size=(2 * self.r, 2 * self.r))
 
 
     def on_touch_move(self, touch):
-        touch.ud['line'].points += [touch.x, max(touch.y, self.y)]
+        #touch.ud['line'].points += [touch.x, max(touch.y, self.y)]
+        touch.ud['Ellipse'].pos = (touch.x - self.r, max(touch.y, self.y) - self.r)
         self.points_list.append((touch.x, max(touch.y, self.y)))
 
 

@@ -3,18 +3,15 @@ import kivy
 from myGraph import MyGraph
 
 from kivy.app import App
-from kivy.lang import Builder
 from kivy.core.window import Window
-from kivy.core.image import Image
 from kivy.uix.widget import Widget
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
 
-from kivy.graphics.vertex_instructions import Line, Rectangle
+from kivy.graphics.vertex_instructions import Rectangle
 from kivy.graphics import Color
 from kivy.graphics.fbo import Fbo
 from kivy.graphics.instructions import InstructionGroup
 from kivy.properties import StringProperty, ListProperty
+from kivy.clock import Clock
 
 import os.path
 from PIL import Image as PILImage
@@ -65,6 +62,25 @@ class Painter(Widget):
             self.yList[self.boxNo - 1] = touch.y
             if self.imageFile != '':
                 self.readRectangle()
+
+    
+    def startMoveBox(self, horiz, vert):
+        self.horiz = horiz
+        self.vert = vert
+        self.moveBox() 
+        Clock.schedule_interval(self.moveBox, 0.1)
+
+
+    def stopMoveBox(self):
+        Clock.unschedule(self.moveBox)
+
+
+    def moveBox(self, *args):
+        horiz = self.horiz
+        vert = self.vert
+        if len(self.instructions[self.boxNo - 1].children) == 3:
+            pos = self.instructions[self.boxNo - 1].children[2].pos
+            self.instructions[self.boxNo - 1].children[2].pos = (pos[0] + horiz, pos[1] + vert)
 
 
     def readRectangle(self):
@@ -120,9 +136,9 @@ class Main(App):
             self.imageFile = self.resizeImage(imageFile)
             self.colorReaderScreen.canvas.before.clear()
             with self.colorReaderScreen.canvas.before:
-                Rectangle(source=self.imageFile, keep_ratio=True,
-                          size=(self.colorReaderScreen.width, self.colorReaderScreen.height*0.75),
-                          pos=(self.colorReaderScreen.x, self.colorReaderScreen.height*0.25))
+                Rectangle(source=self.imageFile,
+                          size=(self.colorReaderScreen.width*0.8, self.colorReaderScreen.height*0.85),
+                          pos=(self.colorReaderScreen.width*0.2, self.colorReaderScreen.height*0.15))
 
 
     def goto_graph(self):

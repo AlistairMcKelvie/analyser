@@ -1,5 +1,5 @@
-#
-<AnalyserScreen>:
+#:import platform kivy.platform
+<ColorReaderScreen>:
     Painter:
         id: painter
         height: root.height * 0.75
@@ -16,91 +16,62 @@
         width: root.width
         y: root.height * 0.2
         height: root.height * 0.05
-        ToggleButton:
-            text: '1'
-            group: 'select'
+        ColorReaderToggleButton:
+            text: painter.buttonText[0]
             state: 'down'
-            allow_no_boxNo: False
             on_press: painter.boxNo = 1
-        ToggleButton:
-            text: '2'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[1]
             on_press: painter.boxNo = 2
-        ToggleButton:
-            text: '3'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[2]
             on_press: painter.boxNo = 3
-        ToggleButton:
-            text: '4'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[3]
             on_press: painter.boxNo = 4
-        ToggleButton:
-            text: '5'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[4]
             on_press: painter.boxNo = 5
 
     BoxLayout:
         width: root.width
         y: root.height * 0.15
         height: root.height * 0.05
-        ToggleButton:
-            text: '6'
-            group: 'select'
-            allow_no_boxNo: False
-            on_press: painter.boxNo = 6
-        ToggleButton:
-            text: '7'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[5]
+            on_press:
+                painter.boxNo = 6
+        ColorReaderToggleButton:
+            text: painter.buttonText[6]
             on_press: painter.boxNo = 7
-        ToggleButton:
-            text: '8'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[7]
             on_press: painter.boxNo = 8
-        ToggleButton:
-            text: '9'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[8]
             on_press: painter.boxNo = 9
-        ToggleButton:
-            text: '10'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[9]
             on_press: painter.boxNo = 10
 
     BoxLayout:
         width: root.width
         y: root.height * 0.1
         height: root.height * 0.05
-        ToggleButton:
-            text: '11'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[10]
             on_press: painter.boxNo = 11
-        ToggleButton:
-            text: '12'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[11]
             on_press: painter.boxNo = 12
-        ToggleButton:
-            text: '13'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[12]
             on_press: painter.boxNo = 13
-        ToggleButton:
-            text: '14'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[13]
             on_press: painter.boxNo = 14
-        ToggleButton:
-            text: '15'
-            group: 'select'
-            allow_no_boxNo: False
+        ColorReaderToggleButton:
+            text: painter.buttonText[14]
             on_press: painter.boxNo = 15
 
     BoxLayout:
@@ -114,6 +85,11 @@
         Button:
             text: 'Go to graph'
             on_release: app.goto_graph()
+
+        TextInput:
+            id: boxSizeText
+            text: '15'
+            font_size: self.height * 0.8
 
 <GraphScreen>:
     BoxLayout:
@@ -134,10 +110,17 @@
         orientation: 'vertical'
         FileChooserListView:
             id: filechooser
-            path: '/Users/alistairmckelvie/Projects/analyzer'
-            #path: '/mnt/sdcard/DCIM'
-            #path: 'D:/Projects/analyser'
+            path: ('/Users/alistairmckelvie/Projects/analyzer' if platform=='mac' else '/mnt/sdcard/DCIM' if platform=='android' else 'D:/Projects/analyser' if platform=='win' else '.')
         Button:
             size_hint_y: 0.1
             text: 'Load'
-            on_release: app.goto_analyser(filechooser.selection[0])
+            on_release: 
+                app.goto_color_reader(filechooser.selection[0])
+       
+ 
+<ColorReaderToggleButton@ToggleButton>:
+    group: 'select'
+    allow_no_boxNo: False
+    font_size: self.height * 0.35
+    halign: 'center'
+    markup: True

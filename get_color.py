@@ -56,11 +56,12 @@ class Painter(Widget):
         x = self.xList[self.selection - 1]
         y = self.yList[self.selection - 1]
         image = PILImage.open('colors.png')
-        import ipdb; ipdb.set_trace()
-        fbo = Fbo(texture=image.texture, size=image.texture.size)
+        #fbo = Fbo(texture=image.textur size=image..size)
         scaled_x = x * (image.texture.width / float(image.width - image.x))
         scaled_y = image.texture.height - y * (image.texture.height / float(image.height + image.y))
-        print fbo.get_pixel_color(scaled_x, scaled_y)
+        scaled_h = imag
+        #print fbo.get_pixel_color(scaled_x, scaled_y)
+
         
         
 

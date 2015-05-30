@@ -120,7 +120,7 @@ class Main(App):
             self.imageFile = self.resizeImage(imageFile)
             self.colorReaderScreen.canvas.before.clear()
             with self.colorReaderScreen.canvas.before:
-                Rectangle(source=self.imageFile,
+                Rectangle(source=self.imageFile, keep_ratio=True,
                           size=(self.colorReaderScreen.width, self.colorReaderScreen.height*0.75),
                           pos=(self.colorReaderScreen.x, self.colorReaderScreen.height*0.25))
 

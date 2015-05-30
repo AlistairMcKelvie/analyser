@@ -27,8 +27,6 @@ class Painter(Widget):
         self.instructions = [InstructionGroup() for _ in range(15)]
         for instruction in self.instructions:
             self.canvas.add(instruction)
-        self.xList = [None] * 15
-        self.yList = [None] * 15
 
 
     def on_touch_down(self, touch):
@@ -58,8 +56,6 @@ class Painter(Widget):
     
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
-            self.xList[self.boxNo - 1] = touch.x
-            self.yList[self.boxNo - 1] = touch.y
             if self.imageFile != '':
                 self.readRectangle()
 
@@ -81,15 +77,16 @@ class Painter(Widget):
         if len(self.instructions[self.boxNo - 1].children) == 3:
             pos = self.instructions[self.boxNo - 1].children[2].pos
             self.instructions[self.boxNo - 1].children[2].pos = (pos[0] + horiz, pos[1] + vert)
+            self.readRectangle()
 
 
     def readRectangle(self):
-        x = self.xList[self.boxNo - 1]
-        y = self.yList[self.boxNo - 1]
+        boxX = self.instructions[self.boxNo - 1].children[2].pos[0]
+        boxY = self.instructions[self.boxNo - 1].children[2].pos[1]
         image = PILImage.open(self.imageFile)
         image = image.transpose(PILImage.FLIP_TOP_BOTTOM)
-        scaled_x = int(x * (image.size[0] / float(self.width)))
-        scaled_y = int((y - self.y) * (image.size[1] / float(self.height)))
+        scaled_x = int((boxX - self.x) * (image.size[0] / float(self.width)))
+        scaled_y = int((boxY - self.y) * (image.size[1] / float(self.height)))
         scaled_boxWidth = int(self.boxHeight * (image.size[0] / float(self.width)))
         scaled_boxHeight = int(self.boxHeight * (image.size[1] / float(self.height)))
         croppedImage = image.crop((scaled_x, scaled_y,

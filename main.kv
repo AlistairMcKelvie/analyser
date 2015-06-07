@@ -1,5 +1,6 @@
 #:import platform kivy.platform
 <ColorReaderScreen>:
+    id: readerScreen
     Painter:
         id: painter
         x: root.width * 0.2
@@ -14,35 +15,85 @@
         height: root.height * 0.85
         orientation: 'vertical'
         Button:
-            text: 'Select Area'
-            on_release: 
-                print app.imageFile
-                root.readRectangle(app.imageFile)
+            text: 'Settings'
+            on_release:
+                painter.inSettings = True 
+                print app.open_settings()
         Button:
             text: 'Go to graph'
-            on_release: app.goto_graph()
-
+            on_release: 
+                app.writeSpotsToConfig()
+                app.goto_graph()
+        ToggleButton:
+            id: blankToggle
+            text: 'Blank'
+            group: 'blank/sample'
+            on_release:
+                painter.spotConcs[painter.boxNo - 1] = 'Blank'
+                if self.state == 'down':\ 
+                readerScreen.valTextWasModifiedByToggle = True
+                sampleValText.text = '-'
+        ToggleButton:
+            id: sampleToggle
+            text: 'Sample'
+            group: 'blank/sample'
+            on_release:
+                print self.state
+                painter.spotConcs[painter.boxNo - 1] = 'Sample'
+                if self.state == 'down':\
+                readerScreen.valTextWasModifiedByToggle = True
+                sampleValText.text = '-'
+        TextInput:
+            id: sampleValText
+            text: '0.1'
+            font_size: self.height * 0.8
+            on_text:
+                readerScreen.updateText()
         TextInput:
             id: boxSizeText
             text: '15'
             font_size: self.height * 0.8
         
-        BoxLayout:
-            orientation: 'vertical'
+        RelativeLayout:
+            cols: 3
+            row: 3
             Button:
+                size_hint_x: None
+                size_hint_y: None
+                x: self.parent.width * 0.33333
+                y: self.parent.height * 0.66667
+                width: self.parent.width * 0.33333
+                height: self.parent.height * 0.33333
                 text: 'Up'
                 on_press: painter.startMoveBox(0, 1)
                 on_release: painter.stopMoveBox()
             Button:
+                size_hint_x: None
+                size_hint_y: None
+                x: self.parent.width * 0.33333
+                y: 0
+                width: self.parent.width * 0.33333
+                height: self.parent.height * 0.33333
                 text: 'Down'
                 on_press: painter.startMoveBox(0, -1)
                 on_release: painter.stopMoveBox()
-        BoxLayout:
             Button:
+                size_hint_x: None
+                size_hint_y: None
+                x: 0
+                y: self.parent.height * 0.33333 
+                width: self.parent.width * 0.33333
+                height: self.parent.height * 0.33333
                 text: 'Left'
                 on_press: painter.startMoveBox(-1, 0)
                 on_release: painter.stopMoveBox()
             Button:
+                size_hint_x: None
+                size_hint_y: None
+                x: self.parent.width * 0.66667
+                y: self.parent.height * 0.33333
+                width: self.parent.width * 0.33333
+                height: self.parent.height * 0.33333
                 text: 'Right'
                 on_press: painter.startMoveBox(1, 0)
                 on_release: painter.stopMoveBox()
@@ -121,7 +172,16 @@
             size_hint_y: None
             height: root.height * 0.25
             text: 'Go to analyser'
-            on_release: app.goto_analyser() 
+            on_release: app.goto_analyser()
+    Label:
+        id: LSR
+        x: root.width * 0.2
+        y: root.height * 0.8
+    Label:
+        id: R2
+        x: root.width * 0.2
+        y: root.height * 0.7
+
 
 <FileChooserScreen>:
     BoxLayout:
@@ -133,7 +193,8 @@
         Button:
             size_hint_y: 0.1
             text: 'Load'
-            on_release: 
+            on_release:
+                app.readSpotsFromConfig()
                 app.goto_color_reader(filechooser.selection[0])
        
  

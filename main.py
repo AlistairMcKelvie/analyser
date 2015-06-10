@@ -13,8 +13,6 @@ from kivy.graphics.instructions import InstructionGroup
 from kivy.properties import StringProperty, ListProperty, BooleanProperty, NumericProperty
 from kivy.clock import Clock
 
-from settingsjson import settings_json
-
 import os.path
 from PIL import Image as PILImage
 from PIL.ImageStat import Stat as imageStat
@@ -56,6 +54,7 @@ class Painter(Widget):
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos) and not self.inSettings:
+            print 'called on_touch_down'
             try:
                 self.boxHeight = int(self.parent.ids['boxSizeText'].text)
             except ValueError:
@@ -63,6 +62,7 @@ class Painter(Widget):
                 self.parent.ids['boxSizeText'].text = str(self.boxHeight)
             self.instructions[self.boxNo - 1].clear()
             h = int(self.boxHeight)
+            print 'box color object', self.boxColor
             self.instructions[self.boxNo - 1].add(self.boxColor)
             touch.ud['Rectangle'] = Rectangle(pos=(touch.x - h / 2, touch.y  - h / 2),
                                               size=(h, h))
@@ -71,15 +71,17 @@ class Painter(Widget):
 
     def on_touch_move(self, touch):
         if self.collide_point(*touch.pos) and not self.inSettings:
+            print 'called on_touch_move'
             h = self.boxHeight
             self.instructions[self.boxNo - 1].clear()
             touch.ud['Rectangle'].pos = (touch.x - h / 2, touch.y - h / 2)
-            self.instructions[self.boxNo - 1].add(Color(0, 0, 0, 0.25))
+            self.instructions[self.boxNo - 1].add(self.boxColor)
             self.instructions[self.boxNo - 1].add(touch.ud['Rectangle'])
 
     
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos) and not self.inSettings:
+            print 'called on_touch_up'
             if self.imageFile != '':
                 self.readRectangle()
 
@@ -100,11 +102,14 @@ class Painter(Widget):
         vert = self.vert
         if len(self.instructions[self.boxNo - 1].children) == 3:
             pos = self.instructions[self.boxNo - 1].children[2].pos
-            self.instructions[self.boxNo - 1].children[2].pos = (pos[0] + horiz, pos[1] + vert)
+            self.instructions[self.boxNo - 1].children[2].pos = (pos[0] + horiz,
+                                                                 pos[1] + vert)
             self.readRectangle()
 
 
     def readRectangle(self):
+        print 'box no', self.boxNo
+        print 'instruction list', self.instructions[self.boxNo - 1].children
         boxX = self.instructions[self.boxNo - 1].children[2].pos[0]
         boxY = self.instructions[self.boxNo - 1].children[2].pos[1]
         image = PILImage.open(self.imageFile)
@@ -114,18 +119,25 @@ class Painter(Widget):
         scaled_boxWidth = int(self.boxHeight * (image.size[0] / float(self.width)))
         scaled_boxHeight = int(self.boxHeight * (image.size[1] / float(self.height)))
         croppedImage = image.crop((scaled_x, scaled_y,
-                                   scaled_x + scaled_boxWidth, scaled_y + scaled_boxHeight))
+                                   scaled_x + scaled_boxWidth,
+                                   scaled_y + scaled_boxHeight))
         color = imageStat(croppedImage).mean
         self.spotVals[self.boxNo - 1] = color
+
         if image.mode == 'RGB':
             lStr = ('[b]{0}[/b]\nR: {1:03.0f}   G: {2:03.0f}   B: {3:03.0f}')
-            self.buttonText[self.boxNo - 1] = lStr.format(self.spotConcs[self.boxNo - 1], color[0], color[1], color[2])
+            self.buttonText[self.boxNo - 1] = lStr.format(self.spotConcs[self.boxNo - 1],
+                                                          color[0], color[1], color[2])
         elif image.mode == 'RGBA':
-            lStr = ('[b]{0}[/b]\nR: {1:03.0f}   G: {2:03.0f}   B: {3:03.0f}   A: {4:03.0f}')
-            self.buttonText[self.boxNo - 1] = lStr.format(self.spotConcs[self.boxNo - 1], color[0], color[1], color[2], color[3])
+            lStr = ('[b]{0}[/b]\nR: {1:03.0f}   '
+                    'G: {2:03.0f}   B: {3:03.0f}   A: {4:03.0f}')
+            self.buttonText[self.boxNo - 1] = lStr.format(self.spotConcs[self.boxNo - 1],
+                                                          color[0], color[1],
+                                                          color[2], color[3])
         else:
             print 'WARNING!: Unsupported color mode - {}'.format(image.mode)
-            self.buttonText[self.boxNo - 1] = 'WARNING!: Unsupported color mode - {}'.format(image.mode)
+            self.buttonText[self.boxNo - 1] = ('WARNING!: Unsupported '
+                                               'color mode - {}').format(image.mode)
 
 
 class GraphScreen(Widget):
@@ -152,9 +164,7 @@ class ColorReaderScreen(Widget):
             except ValueError:
                 print 'excepting'
                 self.ids['sampleValText'].text = '-'
-                self.ids['painter'].spotConcs[boxNo - 1] = 'Sample ' + str(boxNo + 1)
-                
-            
+                self.ids['painter'].spotConcs[boxNo - 1] = 'Sample ' + str(boxNo + 1) 
         else:
             self.valTextWasModifiedByToggle = False
 
@@ -254,12 +264,14 @@ class Main(App):
 
 
     def resizeImage(self, imageFile):
+        print imageFile
         basewidth = 800
         img = PILImage.open(imageFile)
         wpercent = (basewidth / float(img.size[0]))
         hsize = int((float(img.size[1]) * float(wpercent)))
         img = img.resize((basewidth, hsize), PILImage.ANTIALIAS)
         newFile = os.path.dirname(imageFile) + '/resized_' + os.path.basename(imageFile)
+        print newFile
         img.save(newFile)
         return newFile
 

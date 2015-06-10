@@ -65,6 +65,10 @@
                 width: self.parent.width * 0.33333
                 height: self.parent.height * 0.33333
                 text: 'Up'
+                text_size: self.size
+                font_size: self.height * 0.7
+                halign: 'center'
+                valign: 'middle'
                 on_press: painter.startMoveBox(0, 1)
                 on_release: painter.stopMoveBox()
             Button:
@@ -75,6 +79,10 @@
                 width: self.parent.width * 0.33333
                 height: self.parent.height * 0.33333
                 text: 'Down'
+                text_size: self.size
+                font_size: self.height * 0.7
+                halign: 'center'
+                valign: 'middle'
                 on_press: painter.startMoveBox(0, -1)
                 on_release: painter.stopMoveBox()
             Button:
@@ -85,6 +93,10 @@
                 width: self.parent.width * 0.33333
                 height: self.parent.height * 0.33333
                 text: 'Left'
+                text_size: self.size
+                font_size: self.height * 0.7
+                halign: 'center'
+                valign: 'middle'
                 on_press: painter.startMoveBox(-1, 0)
                 on_release: painter.stopMoveBox()
             Button:
@@ -95,6 +107,10 @@
                 width: self.parent.width * 0.33333
                 height: self.parent.height * 0.33333
                 text: 'Right'
+                text_size: self.size
+                font_size: self.height * 0.7
+                halign: 'center'
+                valign: 'middle'
                 on_press: painter.startMoveBox(1, 0)
                 on_release: painter.stopMoveBox()
 
@@ -172,15 +188,29 @@
             size_hint_y: None
             height: root.height * 0.25
             text: 'Go to analyser'
-            on_release: app.goto_analyser()
+            on_release:
+                app.goto_color_reader()
+                print R2.x
+                print R2.y
+                print R2.text_size
+                print R2.height
+                print R2.width
     Label:
         id: LSR
         x: root.width * 0.2
         y: root.height * 0.8
+        width: root.width * 0.3
+        height: root.height * 0.05
+        text_size: self.size
+        font_size: self.height * 0.7
     Label:
         id: R2
         x: root.width * 0.2
         y: root.height * 0.7
+        width: root.width * 0.3
+        height: root.height * 0.05
+        text_size: self.size
+        font_size: self.height * 0.7
 
 
 <FileChooserScreen>:
@@ -189,7 +219,7 @@
         orientation: 'vertical'
         FileChooserListView:
             id: filechooser
-            path: ('/Users/alistairmckelvie/Projects/analyzer' if platform=='mac' else '/mnt/sdcard/DCIM' if platform=='android' else 'D:/Projects/analyser' if platform=='win' else '.')
+            path: ('/Users/alistairmckelvie/Projects/analyzer' if platform=='macosx' else '/mnt/sdcard/DCIM' if platform=='android' else 'D:/Projects/analyser' if platform=='win' else '.')
         Button:
             size_hint_y: 0.1
             text: 'Load'
@@ -203,4 +233,5 @@
     allow_no_boxNo: False
     font_size: self.height * 0.35
     halign: 'center'
+    valign: 'middle'
     markup: True

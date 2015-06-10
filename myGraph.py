@@ -57,43 +57,39 @@ class MyGraph(Graph):
         for key in averageConcs:
             self.dotPlot.points.append((key, -math.log10(averageConcs[key] / blankVal)))
         print self.dotPlot.points
-        
-        # Calculate least squares reg
+       
         N = len(self.dotPlot.points)
-        print 'N', N
-        sumX = sum([x for x, y in self.dotPlot.points])
-        print 'sumX', sumX
-        sumY = sum([y for x, y in self.dotPlot.points])
-        print 'sumY', sumY
-        sumXY = sum([x * y for x, y in self.dotPlot.points])
-        print 'sumXY', sumXY
-        sumXX = sum([x * x for x, y in self.dotPlot.points])
-        print 'sumXX', sumXX
+        if N >= 2:
+            # Calculate least squares reg
+            print 'N', N
+            sumX = sum([x for x, y in self.dotPlot.points])
+            print 'sumX', sumX
+            sumY = sum([y for x, y in self.dotPlot.points])
+            print 'sumY', sumY
+            sumXY = sum([x * y for x, y in self.dotPlot.points])
+            print 'sumXY', sumXY
+            sumXX = sum([x * x for x, y in self.dotPlot.points])
+            print 'sumXX', sumXX
 
-        A = (N * sumXY - sumX * sumY) / (N * sumXX - sumX**2)
-        print 'A', A
-        
-        C = (sumY - A * sumX) / N
-        print 'C', C
-        print 'y = {A}x + {C}'.format(A=A, C=C)
-        self.linePlot.points = [(x, (x * A + C)) for x in range(-1, 11)]
+            A = (N * sumXY - sumX * sumY) / (N * sumXX - sumX**2)
+            print 'A', A
+            
+            C = (sumY - A * sumX) / N
+            print 'C', C
+            print 'y = {A}x + {C}'.format(A=A, C=C)
+            self.linePlot.points = [(x, (x * A + C)) for x in range(-1, 11)]
 
-        # Calculate R2
-        SSres = sum([(y - (x * A + C))**2 for x, y in self.dotPlot.points])
-        print 'SSres', SSres
-        meanY = sum([y for x, y in self.dotPlot.points]) / len(self.dotPlot.points)
-        print 'meanY', meanY
-        SStot = sum([(y - meanY)**2 for x, y in self.dotPlot.points])
-        print 'SStot', SStot
-        R2 = 1 - SSres / SStot
-        print 'R2', R2
-        self.parent.parent.ids['LSR'].text = 'y = {A:.5f}x + {C:.5f}'.format(A=A, C=C)  
-        self.parent.parent.ids['R2'].text = 'R2 = {:.5f}'.format(R2)  
-
-        
-        
-        
-
+            # Calculate R2
+            SSres = sum([(y - (x * A + C))**2 for x, y in self.dotPlot.points])
+            print 'SSres', SSres
+            meanY = sum([y for x, y in self.dotPlot.points]) / len(self.dotPlot.points)
+            print 'meanY', meanY
+            SStot = sum([(y - meanY)**2 for x, y in self.dotPlot.points])
+            print 'SStot', SStot
+            R2 = 1 - SSres / SStot
+            print 'R2', R2
+            self.parent.parent.ids['LSR'].text = 'y = {A:.5f}x + {C:.5f}'.format(A=A, C=C)  
+            self.parent.parent.ids['R2'].text = 'R2 = {:.5f}'.format(R2)  
 
 
 main_widget = Builder.load_string('''

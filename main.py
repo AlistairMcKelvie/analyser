@@ -14,7 +14,14 @@ from kivy.properties import StringProperty, ReferenceListProperty, BooleanProper
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
 
+from sendGmail import sendMail
+
+from kivy.interactive import InteractiveLauncher
+
+import os
 import os.path
+fromos import remove
+from os import listdir
 from PIL import Image as PILImage
 from PIL.ImageStat import Stat as imageStat
 
@@ -251,6 +258,7 @@ class Main(App):
         self.graphScreen = GraphScreen()
         self.colorReaderScreen = ColorReaderScreen()
         self.fileChooserScreen = FileChooserScreen()
+        print os.getcwd()
         return self.fileChooserScreen
     
         
@@ -297,7 +305,7 @@ class Main(App):
                 colorReader.spots[i].type = spotType
 
             spotConc = self.config.get('SpotConcentrations', str(i))
-            if spotConc != 'None':
+            if spotConc != 'None' and spotConc != 'Blank':
                     colorReader.spots[i].conc = float(spotConc)
 
             spotVal = self.config.get('SpotValues', str(i))
@@ -354,6 +362,9 @@ class Main(App):
         config.setdefaults('SpotY', noneDict)
         
 
+    def sendEmail(self):
+        sendMail(['alistair.mckelvie@gmail.com'], 'test', 'test')
+        
 if __name__ == '__main__':
     Main().run()
 

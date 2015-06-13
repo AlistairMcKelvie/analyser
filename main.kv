@@ -1,5 +1,4 @@
 #:import platform kivy.platform
-#:import sendMail sendGmail.sendMail
 <ColorReaderScreen>:
     id: readerScreen
     ColorReader:
@@ -38,7 +37,9 @@
             size_hint_y: 0.3
         Button:
             text: 'Send Mail'
-            on_release: sendMail(['alistair.mckelvie@gmail.com'], 'test', 'test')
+            on_release:
+                print 'doing send mail'
+                app.sendEmail()
         ToggleButton:
             id: blankToggle
             text: 'Blank'
@@ -225,7 +226,7 @@
         orientation: 'vertical'
         FileChooserListView:
             id: filechooser
-            path: ('/Users/alistairmckelvie/Projects/analyzer' if platform=='macosx' else '/mnt/sdcard/DCIM' if platform=='android' else 'D:/Projects/analyser' if platform=='win' else '.')
+            path: ('/Users/alistairmckelvie/Projects/analyzer' if platform=='macosx' else '.' if platform=='android' else 'D:/Projects/analyser' if platform=='win' else '.')
         Button:
             size_hint_y: 0.1
             text: 'Load'

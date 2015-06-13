@@ -1,8 +1,8 @@
 #:import platform kivy.platform
 <ColorReaderScreen>:
     id: readerScreen
-    Painter:
-        id: painter
+    ColorReader:
+        id: colorReader
         x: root.width * 0.2
         y: root.height * 0.15
         width: root.width * 0.8
@@ -15,21 +15,39 @@
         height: root.height * 0.85
         orientation: 'vertical'
         Button:
-            text: 'Settings'
-            on_release:
-                painter.inSettings = True 
-                print app.open_settings()
-        Button:
             text: 'Go to graph'
             on_release: 
                 app.writeSpotsToConfig()
-                app.goto_graph()
+                app.goto_graph() 
+        TextInput:
+            text: '20'
+            font_size: self.height * 0.8
+            on_text: self.text=colorReader.updateSpotSize(self.text)
+        Label:
+            text: 'Spot size'
+            size_hint_y: 0.3
+        TextInput:
+            id: sampleValText
+            text: '-'
+            font_size: self.height * 0.8
+            on_text:
+                readerScreen.updateConcText()
+        Label:
+            text: 'Std Conc'
+            size_hint_y: 0.3
+        Button:
+            text: 'Send Mail'
+            on_release:
+                print 'doing send mail'
+                app.sendEmail()
         ToggleButton:
             id: blankToggle
             text: 'Blank'
             group: 'blank/sample'
+            state: 'down'
             on_release:
-                painter.spotConcs[painter.boxNo - 1] = 'Blank'
+                colorReader.currentSpotType = 'Blank'
+                colorReader.currentSpotConc = 0
                 if self.state == 'down':\ 
                 readerScreen.valTextWasModifiedByToggle = True
                 sampleValText.text = '-'
@@ -38,21 +56,11 @@
             text: 'Sample'
             group: 'blank/sample'
             on_release:
-                print self.state
-                painter.spotConcs[painter.boxNo - 1] = 'Sample'
+                colorReader.currentSpotType = 'Sample'
+                colorReader.currentSpotConc = 9999
                 if self.state == 'down':\
                 readerScreen.valTextWasModifiedByToggle = True
                 sampleValText.text = '-'
-        TextInput:
-            id: sampleValText
-            text: '0.1'
-            font_size: self.height * 0.8
-            on_text:
-                readerScreen.updateText()
-        TextInput:
-            id: boxSizeText
-            text: '15'
-            font_size: self.height * 0.8
         
         RelativeLayout:
             cols: 3
@@ -69,8 +77,8 @@
                 font_size: self.height * 0.7
                 halign: 'center'
                 valign: 'middle'
-                on_press: painter.startMoveBox(0, 1)
-                on_release: painter.stopMoveBox()
+                on_press: colorReader.startMoveBox(0, 1)
+                on_release: colorReader.stopMoveBox()
             Button:
                 size_hint_x: None
                 size_hint_y: None
@@ -83,8 +91,8 @@
                 font_size: self.height * 0.7
                 halign: 'center'
                 valign: 'middle'
-                on_press: painter.startMoveBox(0, -1)
-                on_release: painter.stopMoveBox()
+                on_press: colorReader.startMoveBox(0, -1)
+                on_release: colorReader.stopMoveBox()
             Button:
                 size_hint_x: None
                 size_hint_y: None
@@ -97,8 +105,8 @@
                 font_size: self.height * 0.7
                 halign: 'center'
                 valign: 'middle'
-                on_press: painter.startMoveBox(-1, 0)
-                on_release: painter.stopMoveBox()
+                on_press: colorReader.startMoveBox(-1, 0)
+                on_release: colorReader.stopMoveBox()
             Button:
                 size_hint_x: None
                 size_hint_y: None
@@ -111,70 +119,69 @@
                 font_size: self.height * 0.7
                 halign: 'center'
                 valign: 'middle'
-                on_press: painter.startMoveBox(1, 0)
-                on_release: painter.stopMoveBox()
+                on_press: colorReader.startMoveBox(1, 0)
+                on_release: colorReader.stopMoveBox()
 
     BoxLayout:
         width: root.width
         y: root.height * 0.1
         height: root.height * 0.05
         ColorReaderToggleButton:
-            text: painter.buttonText[0]
+            text: colorReader.spotButtonText[0]
             state: 'down'
-            on_press: painter.boxNo = 1
+            on_press: colorReader.currentSpot = 1
         ColorReaderToggleButton:
-            text: painter.buttonText[1]
-            on_press: painter.boxNo = 2
+            text: colorReader.spotButtonText[1]
+            on_press: colorReader.currentSpot = 2
         ColorReaderToggleButton:
-            text: painter.buttonText[2]
-            on_press: painter.boxNo = 3
+            text: colorReader.spotButtonText[2]
+            on_press: colorReader.currentSpot = 3
         ColorReaderToggleButton:
-            text: painter.buttonText[3]
-            on_press: painter.boxNo = 4
+            text: colorReader.spotButtonText[3]
+            on_press: colorReader.currentSpot = 4
         ColorReaderToggleButton:
-            text: painter.buttonText[4]
-            on_press: painter.boxNo = 5
+            text: colorReader.spotButtonText[4]
+            on_press: colorReader.currentSpot = 5
 
     BoxLayout:
         width: root.width
         y: root.height * 0.05
         height: root.height * 0.05
         ColorReaderToggleButton:
-            text: painter.buttonText[5]
-            on_press:
-                painter.boxNo = 6
+            text: colorReader.spotButtonText[5]
+            on_press: colorReader.currentSpot = 6
         ColorReaderToggleButton:
-            text: painter.buttonText[6]
-            on_press: painter.boxNo = 7
+            text: colorReader.spotButtonText[6]
+            on_press: colorReader.currentSpot = 7
         ColorReaderToggleButton:
-            text: painter.buttonText[7]
-            on_press: painter.boxNo = 8
+            text: colorReader.spotButtonText[7]
+            on_press: colorReader.currentSpot = 8
         ColorReaderToggleButton:
-            text: painter.buttonText[8]
-            on_press: painter.boxNo = 9
+            text: colorReader.spotButtonText[8]
+            on_press: colorReader.currentSpot = 9
         ColorReaderToggleButton:
-            text: painter.buttonText[9]
-            on_press: painter.boxNo = 10
+            text: colorReader.spotButtonText[9]
+            on_press: colorReader.currentSpot = 10
 
     BoxLayout:
         width: root.width
         y: 0
         height: root.height * 0.05
         ColorReaderToggleButton:
-            text: painter.buttonText[10]
-            on_press: painter.boxNo = 11
+            text: colorReader.spotButtonText[10]
+            on_press: colorReader.currentSpot = 11
         ColorReaderToggleButton:
-            text: painter.buttonText[11]
-            on_press: painter.boxNo = 12
+            text: colorReader.spotButtonText[11]
+            on_press: colorReader.currentSpot = 12
         ColorReaderToggleButton:
-            text: painter.buttonText[12]
-            on_press: painter.boxNo = 13
+            text: colorReader.spotButtonText[12]
+            on_press: colorReader.currentSpot = 13
         ColorReaderToggleButton:
-            text: painter.buttonText[13]
-            on_press: painter.boxNo = 14
+            text: colorReader.spotButtonText[13]
+            on_press: colorReader.currentSpot = 14
         ColorReaderToggleButton:
-            text: painter.buttonText[14]
-            on_press: painter.boxNo = 15
+            text: colorReader.spotButtonText[14]
+            on_press: colorReader.currentSpot = 15
 
 
 <GraphScreen>:
@@ -219,7 +226,7 @@
         orientation: 'vertical'
         FileChooserListView:
             id: filechooser
-            path: ('/Users/alistairmckelvie/Projects/analyzer' if platform=='macosx' else '/mnt/sdcard/DCIM' if platform=='android' else 'D:/Projects/analyser' if platform=='win' else '.')
+            path: ('/Users/alistairmckelvie/Projects/analyzer' if platform=='macosx' else '.' if platform=='android' else 'D:/Projects/analyser' if platform=='win' else '.')
         Button:
             size_hint_y: 0.1
             text: 'Load'
@@ -230,7 +237,7 @@
  
 <ColorReaderToggleButton@ToggleButton>:
     group: 'select'
-    allow_no_boxNo: False
+    allow_no_currentSpot: False
     font_size: self.height * 0.35
     halign: 'center'
     valign: 'middle'

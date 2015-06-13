@@ -33,7 +33,7 @@ version = 1.9.0
 
 # (list) Application requirements
 # comma seperated e.g. requirements = sqlite3,kivy
-requirements = kivy, pil
+requirements = openssl, kivy, pil
 
 # (list) Garden requirements
 #garden_requirements =
@@ -56,7 +56,7 @@ fullscreen = 0
 #
 
 # (list) Permissions
-#android.permissions = INTERNET
+android.permissions = INTERNET
 
 # (int) Android API to use
 #android.api = 14

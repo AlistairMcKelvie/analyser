@@ -1,252 +1,40 @@
 import kivy
 
-from myGraph import MyGraph
-
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.widget import Widget
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.popup import Popup
 
 from kivy.graphics.vertex_instructions import Rectangle
 from kivy.graphics import Color
-from kivy.graphics.fbo import Fbo
-from kivy.graphics.instructions import InstructionGroup
-from kivy.properties import StringProperty, ReferenceListProperty, BooleanProperty, NumericProperty, ObjectProperty
-from kivy.clock import Clock
-from kivy.event import EventDispatcher
+from kivy.properties import StringProperty
+from kivy.lang import Builder
+from kivy import platform
+from plyer import camera
 
-from sendGmail import sendMail
-
-from kivy.interactive import InteractiveLauncher
+from PIL import Image as PILImage
 
 import os
 import os.path
-fromos import remove
-from os import listdir
-from PIL import Image as PILImage
-from PIL.ImageStat import Stat as imageStat
+import csv
+import math
+from collections import namedtuple
 
+from myGraph import MyGraph
+from color_reader import ColorReaderSpot, ColorReader, ColorReaderScreen
+from sendGmail import sendMail
 
-spotCount = 15
-
-class ColorReaderSpot(object):
-    def __init__(self, type='Blank', conc=0):
-        self.type = type
-        self.conc = conc
-        # canvas instruction group
-        self.instGrp = InstructionGroup()
-        self.colorVal = None
-        self.colorMode = None
-
-
-    def updateText(self):
-        if self.colorVal is None:
-            print 'No color value, not updating spot text'
-            return None
-        
-        if self.type == 'Std':
-            typeText = 'Std ' + str(self.conc)
-        else:
-            typeText = self.type
-
-        if self.colorMode == 'RBG':
-            print 'spot color type is RGB'
-            lStr = ('[b]{0}[/b]\nR: {1:03.0f}   G: {2:03.0f}   B: {3:03.0f}')
-            text = lStr.format(typeText, self.colorVal[0],
-                                    self.colorVal[1], self.colorVal[2])
-        elif self.colorMode == 'RGBA':
-            print 'spot colr type is RGBA'
-            lStr = ('[b]{0}[/b]\nR: {1:03.0f}   '
-                    'G: {2:03.0f}   B: {3:03.0f}   A: {4:03.0f}')
-            text = lStr.format(typeText, self.colorVal[0],
-                               self.colorVal[1], self.colorVal[2],
-                               self.colorVal[3])
-        elif self.colorMode is None:
-            print 'programming error color mode not set'
-            text = 'color mode not set'
-        else:
-            print 'unknown color format'
-            text = 'unknown color format'
-        return text
-
-
-class ColorReader(Widget):
-    imageFile = StringProperty('')
-    currentSpot = NumericProperty(1)
-    currentSpotType = StringProperty('Blank')
-    currentSpotSize = NumericProperty(15)
-    currentSpotConc = ObjectProperty(None)
-    
-    text1 = StringProperty('1')
-    text2 = StringProperty('2')
-    text3 = StringProperty('3')
-    text4 = StringProperty('4')
-    text5 = StringProperty('5')
-    text6 = StringProperty('6')
-    text7 = StringProperty('7')
-    text8 = StringProperty('8')
-    text9 = StringProperty('9')
-    text10 = StringProperty('10')
-    text11 = StringProperty('11')
-    text12 = StringProperty('12')
-    text13 = StringProperty('13')
-    text14 = StringProperty('14')
-    text15 = StringProperty('15')
-    spotButtonText = ReferenceListProperty(text1,
-                                           text2,
-                                           text3,
-                                           text4,
-                                           text5,
-                                           text6,
-                                           text7,
-                                           text8,
-                                           text9,
-                                           text10,
-                                           text11,
-                                           text12,
-                                           text13,
-                                           text14,
-                                           text15)
-
-
-    def __init__(self, **kwargs):
-        super(ColorReader, self).__init__(**kwargs)
-        self.spotColor = Color(0, 0, 0, 0.25)
-        self.spots = [ColorReaderSpot() for i in range(spotCount)]
-        for spot in self.spots:
-            spot.instGrp.add(self.spotColor)
-            self.canvas.add(spot.instGrp)
-        self.initialImageAndDrawDone = False
-        self.analysisImage = None
-        
-
-    def initialDraw(self):
-        self.analysisImage = PILImage.open(self.imageFile)
-        self.analysisImage = self.analysisImage.transpose(PILImage.FLIP_TOP_BOTTOM)
-        
-        for i in range(spotCount):
-            self.spots[i].colorMode = self.analysisImage.mode
-            buttonStr = self.spots[i].updateText()
-            if buttonStr is not None:
-                self.spotButtonText[i] = buttonStr
-
-
-    
-    def updateSpotSize(self, boxSize):
-        try:
-            self.currentBoxSize = int(boxSize)
-        except ValueError:
-            pass
-        return str(self.currentBoxSize)
-
-
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            print 'called on_touch_down'
-            self.spots[self.currentSpot - 1].instGrp.clear()
-            size = self.currentSpotSize
-            self.spots[self.currentSpot - 1].instGrp.add(self.spotColor)
-            touch.ud['Rectangle'] = Rectangle(pos=(touch.x - size / 2,
-                                                   touch.y - size / 2),
-                                              size=(size, size))
-            self.spots[self.currentSpot - 1].instGrp.add(touch.ud['Rectangle'])
-
-
-    def on_touch_move(self, touch):
-        if self.collide_point(*touch.pos):
-            print 'called on_touch_move'
-            size = self.currentSpotSize
-            self.spots[self.currentSpot - 1].instGrp.clear()
-            touch.ud['Rectangle'].pos = (touch.x - size / 2, touch.y - size / 2)
-            self.spots[self.currentSpot - 1].instGrp.add(self.spotColor)
-            self.spots[self.currentSpot - 1].instGrp.add(touch.ud['Rectangle'])
-
-    
-    def on_touch_up(self, touch):
-        if self.collide_point(*touch.pos):
-            print 'called on_touch_up'
-            if self.imageFile != '':
-                self.readRectangle()
-
-    
-    def startMoveBox(self, horiz, vert):
-        self.horiz = horiz
-        self.vert = vert
-        self.moveBox() 
-        Clock.schedule_interval(self.moveBox, 0.1)
-
-
-    def stopMoveBox(self):
-        Clock.unschedule(self.moveBox)
-
-
-    def moveBox(self, *args):
-        horiz = self.horiz
-        vert = self.vert
-        if len(self.instructions[self.currentSpot - 1].children) == 3:
-            pos = self.instructions[self.currentSpot - 1].children[2].pos
-            self.instructions[self.currentSpot - 1].children[2].pos = (pos[0] + horiz,
-                                                                 pos[1] + vert)
-            self.readRectangle()
-
-
-    def readRectangle(self):
-        image = self.analysisImage
-        self.spots[self.currentSpot - 1].type = self.currentSpotType
-        self.spots[self.currentSpot - 1].conc = self.currentSpotConc
-        spotSize = self.spots[self.currentSpot - 1].instGrp.children[2].size[0]
-        print 'spot no', self.currentSpot
-        print 'instruction list', self.spots[self.currentSpot - 1].instGrp.children
-        spotX = self.spots[self.currentSpot - 1].instGrp.children[2].pos[0]
-        spotY = self.spots[self.currentSpot - 1].instGrp.children[2].pos[1]
-        scaled_x = int((spotX - self.x) * (image.size[0] / float(self.width)))
-        scaled_y = int((spotY - self.y) * (image.size[1] / float(self.height)))
-        scaled_spotWidth = int(spotSize * (image.size[0] / float(self.width)))
-        scaled_spotHeight = int(spotSize * (image.size[1] / float(self.height)))
-        croppedImage = image.crop((scaled_x, scaled_y,
-                                   scaled_x + scaled_spotWidth,
-                                   scaled_y + scaled_spotHeight))
-        color = imageStat(croppedImage).mean
-        self.spots[self.currentSpot - 1].colorVal = color
-        self.spots[self.currentSpot - 1].colorMode = image.mode
-        buttonStr = self.spots[self.currentSpot - 1].updateText()
-
-        if buttonStr is not None:
-            self.spotButtonText[self.currentSpot - 1] = buttonStr
-            
-        
-
-class GraphScreen(Widget):
+class MainMenuScreen(BoxLayout):
     pass
 
 
-class ColorReaderScreen(Widget):
-    valTextWasModifiedByToggle = BooleanProperty(False)
+class ImageMenuScreen(BoxLayout):
+    pass
 
 
-    def updateConcText(self):
-        print 'on text was called'
-        print self.valTextWasModifiedByToggle
-        currentSpot = self.ids['colorReader'].currentSpot
-        if not self.valTextWasModifiedByToggle:
-            print 'toggle state updated'
-            text = self.ids['sampleValText'].text
-            if text == '':
-                self.ids['sampleValText'].text = 0
-            print text
-            try:
-                self.ids['colorReader'].spots[currentSpot - 1].conc = float(text)
-                self.ids['colorReader'].currentSpotConc = float(text)
-                print self.ids['colorReader'].currentSpotConc
-                self.ids['sampleToggle'].state = 'normal'
-                self.ids['sampleToggle'].background = 'normal'
-                self.ids['blankToggle'].state = 'normal'
-                self.ids['blankToggle'].background = 'normal'
-                self.ids['colorReader'].currentSpotType = 'Std'
-            except ValueError:
-                print 'excepting'
-                self.ids['sampleValText'].text = '-'
-        else:
-            self.valTextWasModifiedByToggle = False
+class GraphScreen(Widget):
+    pass
 
 
 class FileChooserScreen(Widget):
@@ -254,35 +42,50 @@ class FileChooserScreen(Widget):
 
 
 class Main(App):
+    currentSampleSet = StringProperty('')
+    measuredChannel = StringProperty('red')
     def build(self):
+        self.mainMenuScreen = MainMenuScreen()
+        self.imageMenuScreen = ImageMenuScreen()
         self.graphScreen = GraphScreen()
+        Builder.load_file('color_reader.kv')
         self.colorReaderScreen = ColorReaderScreen()
         self.fileChooserScreen = FileChooserScreen()
-        print os.getcwd()
-        return self.fileChooserScreen
+        return self.mainMenuScreen
     
-        
+    
+    def goto_image_menu(self):
+        print 'self.directory', self.directory
+        print 'self.user_data_dir', self.user_data_dir
+        print 'os.getcwd', os.getcwd()
+        self.clearAllWidgets()
+        Window.add_widget(self.imageMenuScreen)
+
+
+    def goto_get_stock_image(self):
+        self.fileChooserScreen.ids['fileChooser'].path =\
+            os.getcwd() + '/stock_images'
+        self.clearAllWidgets()
+        Window.add_widget(self.fileChooserScreen)
+
+
     def goto_color_reader(self, imageFile=None):
         colorReader = self.colorReaderScreen.ids['colorReader']
-        Window.remove_widget(self.fileChooserScreen)
-        Window.remove_widget(self.graphScreen)
+        self.clearAllWidgets()
         Window.add_widget(self.colorReaderScreen)
-        
         # color reader initialization
-        if not colorReader.initialImageAndDrawDone:
-            self.imageFile = imageFile
-            if imageFile is not None:
-                self.colorReaderScreen.ids['colorReader'].imageFile = imageFile
-                self.imageFile = self.resizeImage(imageFile)
-                self.colorReaderScreen.canvas.before.clear()
-                with self.colorReaderScreen.canvas.before:
-                    Rectangle(source=self.imageFile,
-                              size=(self.colorReaderScreen.width * 0.8,
-                                    self.colorReaderScreen.height * 0.85),
-                              pos=(self.colorReaderScreen.width * 0.2,
-                                   self.colorReaderScreen.height * 0.15))
-            colorReader.initialDraw()
-            colorReader.initialImageAndDrawDone = True
+        self.imageFile = imageFile
+        if imageFile is not None:
+            self.colorReaderScreen.ids['colorReader'].imageFile = imageFile
+            self.colorReaderScreen.canvas.before.clear()
+            with self.colorReaderScreen.canvas.before:
+                Rectangle(source=self.imageFile,
+                          size=(self.colorReaderScreen.width * 0.8,
+                                self.colorReaderScreen.height * 0.85),
+                          pos=(self.colorReaderScreen.width * 0.2,
+                               self.colorReaderScreen.height * 0.15))
+        colorReader.initialDraw()
+        colorReader.initialImageAndDrawDone = True
 
 
     def goto_graph(self):
@@ -290,16 +93,16 @@ class Main(App):
         if [i.type for i in colorReader.spots].count('Blank') == 0:
             print 'No blank!'
         else:
-            self.graphScreen.ids['graph'].updateGraph(colorReader.spotConcs,
-                                                      colorReader.spotVals)
-        Window.remove_widget(self.fileChooserScreen)
-        Window.remove_widget(self.colorReaderScreen)
+            self.graphScreen.ids['graph'].updateGraph(
+                    [spot.conc for spot in colorReader.spots],
+                    [spot.colorVal for spot in colorReader.spots] )
+        self.clearAllWidgets()
         Window.add_widget(self.graphScreen)
 
 
     def readSpotsFromConfig(self):
         colorReader = self.colorReaderScreen.ids['colorReader']
-        for i in range(spotCount):
+        for i in range(self.spotCount):
             spotType = self.config.get('SpotTypes', str(i))
             if spotType != 'None':
                 colorReader.spots[i].type = spotType
@@ -310,49 +113,41 @@ class Main(App):
 
             spotVal = self.config.get('SpotValues', str(i))
             if spotVal != 'None':
-                colorReader.spots[i].colorVal = [float(j) for j in spotVal[1:-1].split(',')]
+                colorReader.spots[i].colorVal = [float(j) for j in \
+                                                 spotVal[1:-1].split(',')]
             
             spotSize = self.config.get('SpotSizes', str(i))
             spotX = self.config.get('SpotX', str(i))
             spotY = self.config.get('SpotY', str(i))
-            print spotSize
-            print spotX
-            print spotY
+            print 'spot size', spotSize
+            print 'spot x', spotX
+            print 'spot y', spotY
             if spotSize != 'None':
-                colorReader.spots[i].instGrp.add(Rectangle(size=(float(spotSize), float(spotSize)),
-                                                           pos=(float(spotX), float(spotY))))
+                colorReader.spots[i].instGrp.add(
+                        Rectangle(size=(float(spotSize), float(spotSize)),
+                                                           pos=(float(spotX),
+                                                               float(spotY))))
 
 
     def writeSpotsToConfig(self):
         colorReader = self.colorReaderScreen.ids['colorReader']
-        for i in range(spotCount):
+        for i in range(self.spotCount):
             self.config.set('SpotTypes', str(i), colorReader.spots[i].type)
             self.config.set('SpotConcentrations', str(i), colorReader.spots[i].conc)
             self.config.set('SpotValues', str(i), colorReader.spots[i].colorVal)
-            graphicsInstucts = colorReader.spots[i].instGrp.children
-            if len(graphicsInstucts) == 3:
-                self.config.set('SpotSizes', str(i), int(graphicsInstucts[2].size[0]))
-                self.config.set('SpotX', str(i), int(graphicsInstucts[2].pos[0]))
-                self.config.set('SpotY', str(i), int(graphicsInstucts[2].pos[1]))
+            graphicsInstructs = colorReader.spots[i].instGrp.children
+            if len(graphicsInstructs) == 3:
+                self.config.set('SpotSizes', str(i), int(graphicsInstructs[2].size[0]))
+                self.config.set('SpotX', str(i), int(graphicsInstructs[2].pos[0]))
+                self.config.set('SpotY', str(i), int(graphicsInstructs[2].pos[1]))
         self.config.write()
 
 
-    def resizeImage(self, imageFile):
-        print imageFile
-        basewidth = 800
-        img = PILImage.open(imageFile)
-        wpercent = (basewidth / float(img.size[0]))
-        hsize = int((float(img.size[1]) * float(wpercent)))
-        img = img.resize((basewidth, hsize), PILImage.ANTIALIAS)
-        newFile = os.path.dirname(imageFile) + '/resized_' + os.path.basename(imageFile)
-        print newFile
-        img.save(newFile)
-        return newFile
-
-
     def build_config(self, config):
+        config.setdefaults('SpotCount', {'spotCount': 15})
+        self.spotCount = int(config.get('SpotCount', 'spotCount'))
         noneDict = {}
-        for i in range(spotCount):
+        for i in range(self.spotCount):
             noneDict[str(i)] = None
         config.setdefaults('SpotTypes', noneDict)
         config.setdefaults('SpotConcentrations', noneDict)
@@ -360,11 +155,156 @@ class Main(App):
         config.setdefaults('SpotSizes', noneDict)
         config.setdefaults('SpotX', noneDict)
         config.setdefaults('SpotY', noneDict)
-        
+ 
 
     def sendEmail(self):
         sendMail(['alistair.mckelvie@gmail.com'], 'test', 'test')
+    
+
+    def clearAllWidgets(self):
+        for widget in Window.children:
+            Window.remove_widget(widget)
+
+
+    def take_photo(self):
+        try:
+            filepath = self.user_data_dir + '/test.jpg'
+            fp=filepath
+            camera.take_picture(filename=filepath, 
+                                on_complete=self.camera_callback())
+        except NotImplementedError:
+            popup = MsgPopup(msg="This feature has not yet been "
+                                 "implemented for this platform.")
+            popup.open()
+
+
+    def camera_callback(self):
+        print 'got to camera callback'
+
+
+    def writeStdsAndGetNewImage(self):
+        if self.currentSampleSet == 'calibration':
+            self.calib = self.calculateACalibCurve()
+            openMode = 'w'
+        else:
+            openMode = 'a'
+        channelIndex = self.channelIndexFromName()
+        spots = self.colorReaderScreen.ids['colorReader'].spots
+        stdsFile = self.user_data_dir + '/stds.csv'
+        print stdsFile
+        fieldNames = ['sample_set', 'known_concentration', 'red', 'green', 'blue',
+                      'measured_channel', 'A', 'calculated_concentration']
+        with open(stdsFile, openMode) as sFile:
+            csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
+            if self.currentSampleSet == 'calibration':
+                csvWriter.writeheader()
+            for i in range(self.spotCount):
+                alpha = -math.log10(spots[i].colorVal[channelIndex] /
+                                    self.calib.blank)
+                calculatedConc = (alpha - self.calib.C) / self.calib.M
+                if self.currentSampleSet == 'calibration':
+                    conc = spots[i].conc
+                else:
+                    conc = ''
+                csvWriter.writerow(
+                    {'sample_set': self.currentSampleSet, 
+                     'known_concentration': conc,
+                     'red': '{:.3f}'.format(spots[i].colorVal[0]),
+                     'green': '{:.3f}'.format(spots[i].colorVal[1]),
+                     'blue': '{:.3f}'.format(spots[i].colorVal[2]),
+                     'measured_channel': self.measuredChannel,
+                     'A': '{:.3f}'.format(alpha),
+                     'calculated_concentration': '{:.3f}'.format(calculatedConc)})
+        if self.currentSampleSet == 'calibration':
+            self.currentSampleSet = '1'
+        else:
+            self.currentSampleSet = str(int(self.currentSampleSet) + 1)
+        self.goto_image_menu()
+       
+
+    def calculateACalibCurve(self):
+        self.writeSpotsToConfig()
+        spots = self.colorReaderScreen.ids['colorReader'].spots
+        calibPoints = []
+        channelIndex = self.channelIndexFromName()
+        colorValSumDict = {}
+        colorValCountDict = {}
+        colorValAverageDict = {}
+        print '============'
+        for i in range(self.spotCount):
+            print spots[i].conc
+            print spots[i].colorVal[channelIndex]
+            try:
+                colorValSumDict[spots[i].conc] += spots[i].colorVal[channelIndex]
+            except KeyError:
+                colorValSumDict[spots[i].conc] = spots[i].colorVal[channelIndex]
+            try:
+                colorValCountDict[spots[i].conc] += 1
+            except KeyError:
+                colorValCountDict[spots[i].conc] = 1
+        for x in colorValSumDict:
+            colorValAverageDict[x] = colorValSumDict[x] / colorValCountDict[x]
+        print colorValSumDict
+        print colorValCountDict
+        print colorValAverageDict
+
+        blankVal = colorValAverageDict.pop(0)
+        calibPoints.append((0, 0))
+        for key in colorValAverageDict:
+            calibPoints.append((key, -math.log10(colorValAverageDict[key] / blankVal)))
+        print calibPoints
         
+        # Make calibration curve
+        N = len(calibPoints)
+        if N >= 2:
+            # Calculate least squareds reg
+            print 'N', N
+            sumX = sum([x for x, y in calibPoints])
+            print 'sumX', sumX
+            sumY = sum([y for x, y in calibPoints])
+            print 'sumY', sumY
+            sumXY = sum([x * y for x, y in calibPoints])
+            print 'sumXY', sumXY
+            sumXX = sum([x * x for x, y in calibPoints])
+            print 'sumXX', sumXX
+
+            M = (N * sumXY - sumX * sumY) / (N * sumXX - sumX**2)
+            print 'M', M
+ 
+            C = (sumY - M * sumX) / N
+            print 'C', C
+            print 'y = {M}x + {C}'.format(M=M, C=C)
+
+            # Calculate R2
+            SSres = sum([(y - (x * M + C))**2 for x, y in calibPoints])
+            print 'SSres', SSres
+            meanY = sum([y for x, y in calibPoints]) / len(calibPoints)
+            print 'meanY', meanY
+            SStot = sum([(y - meanY)**2 for x, y in calibPoints])
+            print 'SStot', SStot
+            R2 = 1 - SSres / SStot
+            print 'R2 = {:.5f}'.format(R2)
+            Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'blank'])
+            return Calib(M=M, C=C, R2=R2, blank=blankVal)
+            
+        
+    def channelIndexFromName(self):
+        if self.measuredChannel == 'red':
+            return 0
+        if self.measuredChannel == 'green':
+            return 1
+        if self.measuredChannel == 'blue':
+            return 2
+        raise RuntimeError('{} is not a valid channel name.'.format(self.measuredChannel))
+
+
+class MsgPopup(Popup):
+    def __init__(self, msg):
+        super(MsgPopup, self).__init__()
+
+        self.ids.message_label.text = msg
+
+
 if __name__ == '__main__':
     Main().run()
 

@@ -20,9 +20,9 @@
                 app.writeSpotsToConfig()
                 app.goto_graph() 
         TextInput:
-            text: '20'
+            text: str(colorReader.currentSpotSize)
             font_size: self.height * 0.8
-            on_text: self.text=colorReader.updateSpotSize(self.text)
+            on_text: colorReader.updateSpotSize(self.text)
         Label:
             text: 'Spot size'
             size_hint_y: 0.3

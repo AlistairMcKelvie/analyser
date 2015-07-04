@@ -123,12 +123,11 @@ class ColorReader(Widget):
                 self.spotButtonText[i] = buttonStr
 
  
-    def updateSpotSize(self, boxSize):
+    def updateSpotSize(self, spotSize):
         try:
-            self.currentBoxSize = int(boxSize)
+            self.currentSpotSize = int(spotSize)
         except ValueError:
             pass
-        return str(self.currentBoxSize)
 
 
     def on_touch_down(self, touch):
@@ -136,6 +135,7 @@ class ColorReader(Widget):
             print 'called on_touch_down'
             self.spots[self.currentSpot - 1].instGrp.clear()
             size = self.currentSpotSize
+            print size
             self.spots[self.currentSpot - 1].instGrp.add(self.spotColor)
             touch.ud['Rectangle'] = Rectangle(pos=(touch.x - size / 2,
                                                    touch.y - size / 2),
@@ -204,8 +204,8 @@ class ColorReader(Widget):
 
         if buttonStr is not None:
             self.spotButtonText[self.currentSpot - 1] = buttonStr
-            
-        
+ 
+
 class ColorReaderScreen(Widget):
     valTextWasModifiedByToggle = BooleanProperty(False)
 

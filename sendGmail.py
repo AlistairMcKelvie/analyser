@@ -10,11 +10,13 @@ Alistair McKelvie May 2015
 import smtplib
 import base64
 import urllib
+import urllib2
 from email.mime.text import MIMEText
 import json
 from argparse import ArgumentParser
 import sys
 import traceback
+from kivy.network.urlrequest import UrlRequest
 
 user = 'offshoreweather@gmail.com'
 
@@ -27,25 +29,27 @@ def sendMail(toList, subject, message):
     '''toList is a list of email address strings. subject and message are strings'''
     try:
         token = RefreshToken(clientId, clientSecret, refreshToken)
- 
+        print token 
         msg = MIMEText(message)
         msg['Subject'] = subject
         msg['From'] = user
         msg['To'] = ', '.join(toList)
-
         con = smtplib.SMTP('smtp.gmail.com', 587)
-        con.set_debuglevel(False)
-        con.starttls()
 
+        con.set_debuglevel(True)
+        con.starttls()
         authString = ('user={0}\1auth=Bearer {1}\1\1').format(user, token)
         
         con.docmd('AUTH', 'XOAUTH2 ' + base64.b64encode(authString))
         con.sendmail(user, toList, msg.as_string())
         print "Message '{}' sent.".format(subject)
-    except Exception:
-        print trackback.format_exc()
+    except:
+        print traceback.format_exc()
     finally:
-        con.close()
+        print '!!!!!!!!!!!!!!!!!!!!!'
+        print 'XXXXXXXXXXXXXXXXXXXX'
+        #con.close()
+        print traceback.format_exc()
 
 
 def RefreshToken(client_id, client_secret, refresh_token):
@@ -70,11 +74,21 @@ def RefreshToken(client_id, client_secret, refresh_token):
     params['refresh_token'] = refresh_token
     params['grant_type'] = 'refresh_token'
     request_url = 'https://accounts.google.com/o/oauth2/token'
-
-    response = urllib.urlopen(request_url, urllib.urlencode(params)).read()
+    print request_url
+    print urllib.urlencode(params)
+    try:
+        print 'xx'
+        urllib.urlopen(request_url, urllib.urlencode(params))
+        print 'yy'
+    except:
+        print traceback.format_exc()
+    #response = UrlRequest(request_url, req_body=urllib.urlencode(params))
+    response = urllib2.urlopen(request_url, urllib.urlencode(params)).read()
+    #import ipdb;ipdb.set_trace()
     return json.loads(response)['access_token']
 
-
+def got_weather(req, results):
+    print results
 def main(argv):
     parser = ArgumentParser()
     parser.add_argument('-t', '--to_addresses', nargs='+', help='Email addresses to send to')

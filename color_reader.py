@@ -1,25 +1,23 @@
 import kivy
 
-from myGraph import MyGraph
-
-from kivy.app import App
-from kivy.core.window import Window
 from kivy.uix.widget import Widget
+
+from kivy.clock import Clock
 
 from kivy.graphics.vertex_instructions import Rectangle
 from kivy.graphics import Color
 from kivy.graphics.fbo import Fbo
-from kivy.graphics.instructions import InstructionGroup
-from kivy.properties import StringProperty, ReferenceListProperty, BooleanProperty, NumericProperty, ObjectProperty
-from kivy.clock import Clock
-from kivy.event import EventDispatcher
 
-import os.path
+from kivy.properties import StringProperty,\
+                            ReferenceListProperty,\
+                            NumericProperty,\
+                            ObjectProperty,\
+                            BooleanProperty
+
+from kivy.graphics.instructions import InstructionGroup
+
 from PIL import Image as PILImage
 from PIL.ImageStat import Stat as imageStat
-
-
-spotCount = 15
 
 class ColorReaderSpot(object):
     def __init__(self, type='Blank', conc=0):
@@ -29,6 +27,7 @@ class ColorReaderSpot(object):
         self.instGrp = InstructionGroup()
         self.colorVal = None
         self.colorMode = None
+        self.A = None
 
 
     def updateText(self):
@@ -40,8 +39,7 @@ class ColorReaderSpot(object):
             typeText = 'Std ' + str(self.conc)
         else:
             typeText = self.type
-
-        if self.colorMode == 'RBG':
+        if self.colorMode == 'RGB':
             print 'spot color type is RGB'
             lStr = ('[b]{0}[/b]\nR: {1:03.0f}   G: {2:03.0f}   B: {3:03.0f}')
             text = lStr.format(typeText, self.colorVal[0],
@@ -64,10 +62,11 @@ class ColorReaderSpot(object):
 
 class ColorReader(Widget):
     imageFile = StringProperty('')
+    spotCount = NumericProperty(15)
     currentSpot = NumericProperty(1)
     currentSpotType = StringProperty('Blank')
     currentSpotSize = NumericProperty(15)
-    currentSpotConc = ObjectProperty(None)
+    currentSpotConc = ObjectProperty(0)
     
     text1 = StringProperty('1')
     text2 = StringProperty('2')
@@ -104,7 +103,7 @@ class ColorReader(Widget):
     def __init__(self, **kwargs):
         super(ColorReader, self).__init__(**kwargs)
         self.spotColor = Color(0, 0, 0, 0.25)
-        self.spots = [ColorReaderSpot() for i in range(spotCount)]
+        self.spots = [ColorReaderSpot() for i in range(self.spotCount)]
         for spot in self.spots:
             spot.instGrp.add(self.spotColor)
             self.canvas.add(spot.instGrp)
@@ -114,16 +113,16 @@ class ColorReader(Widget):
 
     def initialDraw(self):
         self.analysisImage = PILImage.open(self.imageFile)
-        self.analysisImage = self.analysisImage.transpose(PILImage.FLIP_TOP_BOTTOM)
+        self.analysisImage = self.analysisImage.transpose(\
+            PILImage.FLIP_TOP_BOTTOM)
         
-        for i in range(spotCount):
+        for i in range(self.spotCount):
             self.spots[i].colorMode = self.analysisImage.mode
             buttonStr = self.spots[i].updateText()
             if buttonStr is not None:
                 self.spotButtonText[i] = buttonStr
 
-
-    
+ 
     def updateSpotSize(self, boxSize):
         try:
             self.currentBoxSize = int(boxSize)
@@ -178,7 +177,7 @@ class ColorReader(Widget):
         if len(self.instructions[self.currentSpot - 1].children) == 3:
             pos = self.instructions[self.currentSpot - 1].children[2].pos
             self.instructions[self.currentSpot - 1].children[2].pos = (pos[0] + horiz,
-                                                                 pos[1] + vert)
+                                                                       pos[1] + vert)
             self.readRectangle()
 
 
@@ -207,11 +206,6 @@ class ColorReader(Widget):
             self.spotButtonText[self.currentSpot - 1] = buttonStr
             
         
-
-class GraphScreen(Widget):
-    pass
-
-
 class ColorReaderScreen(Widget):
     valTextWasModifiedByToggle = BooleanProperty(False)
 
@@ -241,119 +235,4 @@ class ColorReaderScreen(Widget):
         else:
             self.valTextWasModifiedByToggle = False
 
-
-class FileChooserScreen(Widget):
-    pass
-
-
-class Main(App):
-    def build(self):
-        self.graphScreen = GraphScreen()
-        self.colorReaderScreen = ColorReaderScreen()
-        self.fileChooserScreen = FileChooserScreen()
-        return self.fileChooserScreen
-    
-        
-    def goto_color_reader(self, imageFile=None):
-        colorReader = self.colorReaderScreen.ids['colorReader']
-        Window.remove_widget(self.fileChooserScreen)
-        Window.remove_widget(self.graphScreen)
-        Window.add_widget(self.colorReaderScreen)
-        
-        # color reader initialization
-        if not colorReader.initialImageAndDrawDone:
-            self.imageFile = imageFile
-            if imageFile is not None:
-                self.colorReaderScreen.ids['colorReader'].imageFile = imageFile
-                self.imageFile = self.resizeImage(imageFile)
-                self.colorReaderScreen.canvas.before.clear()
-                with self.colorReaderScreen.canvas.before:
-                    Rectangle(source=self.imageFile,
-                              size=(self.colorReaderScreen.width * 0.8,
-                                    self.colorReaderScreen.height * 0.85),
-                              pos=(self.colorReaderScreen.width * 0.2,
-                                   self.colorReaderScreen.height * 0.15))
-            colorReader.initialDraw()
-            colorReader.initialImageAndDrawDone = True
-
-
-    def goto_graph(self):
-        colorReader = self.colorReaderScreen.ids['colorReader']
-        if [i.type for i in colorReader.spots].count('Blank') == 0:
-            print 'No blank!'
-        else:
-            self.graphScreen.ids['graph'].updateGraph([i.conc for i in colorReader.spots],
-                                                      [i.conc for i in colorReader.spots])i
-        Window.remove_widget(self.fileChooserScreen)
-        Window.remove_widget(self.colorReaderScreen)
-        Window.add_widget(self.graphScreen)
-
-
-    def readSpotsFromConfig(self):
-        colorReader = self.colorReaderScreen.ids['colorReader']
-        for i in range(spotCount):
-            spotType = self.config.get('SpotTypes', str(i))
-            if spotType != 'None':
-                colorReader.spots[i].type = spotType
-
-            spotConc = self.config.get('SpotConcentrations', str(i))
-            if spotConc != 'None':
-                    colorReader.spots[i].conc = float(spotConc)
-
-            spotVal = self.config.get('SpotValues', str(i))
-            if spotVal != 'None':
-                colorReader.spots[i].colorVal = [float(j) for j in spotVal[1:-1].split(',')]
-            
-            spotSize = self.config.get('SpotSizes', str(i))
-            spotX = self.config.get('SpotX', str(i))
-            spotY = self.config.get('SpotY', str(i))
-            print spotSize
-            print spotX
-            print spotY
-            if spotSize != 'None':
-                colorReader.spots[i].instGrp.add(Rectangle(size=(float(spotSize), float(spotSize)),
-                                                           pos=(float(spotX), float(spotY))))
-
-
-    def writeSpotsToConfig(self):
-        colorReader = self.colorReaderScreen.ids['colorReader']
-        for i in range(spotCount):
-            self.config.set('SpotTypes', str(i), colorReader.spots[i].type)
-            self.config.set('SpotConcentrations', str(i), colorReader.spots[i].conc)
-            self.config.set('SpotValues', str(i), colorReader.spots[i].colorVal)
-            graphicsInstucts = colorReader.spots[i].instGrp.children
-            if len(graphicsInstucts) == 3:
-                self.config.set('SpotSizes', str(i), int(graphicsInstucts[2].size[0]))
-                self.config.set('SpotX', str(i), int(graphicsInstucts[2].pos[0]))
-                self.config.set('SpotY', str(i), int(graphicsInstucts[2].pos[1]))
-        self.config.write()
-
-
-    def resizeImage(self, imageFile):
-        print imageFile
-        basewidth = 800
-        img = PILImage.open(imageFile)
-        wpercent = (basewidth / float(img.size[0]))
-        hsize = int((float(img.size[1]) * float(wpercent)))
-        img = img.resize((basewidth, hsize), PILImage.ANTIALIAS)
-        newFile = os.path.dirname(imageFile) + '/resized_' + os.path.basename(imageFile)
-        print newFile
-        img.save(newFile)
-        return newFile
-
-
-    def build_config(self, config):
-        noneDict = {}
-        for i in range(spotCount):
-            noneDict[str(i)] = None
-        config.setdefaults('SpotTypes', noneDict)
-        config.setdefaults('SpotConcentrations', noneDict)
-        config.setdefaults('SpotValues', noneDict)
-        config.setdefaults('SpotSizes', noneDict)
-        config.setdefaults('SpotX', noneDict)
-        config.setdefaults('SpotY', noneDict)
-        
-
-if __name__ == '__main__':
-    Main().run()
 

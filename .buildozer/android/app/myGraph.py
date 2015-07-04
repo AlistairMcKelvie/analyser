@@ -52,7 +52,7 @@ class MyGraph(Graph):
                         concSum += vals[i][colorIndex]
                 averageConcs[conc] = concSum / concs.count(conc)
         print averageConcs
-        blankVal = averageConcs.pop('Blank')
+        blankVal = averageConcs.pop(0)
         self.dotPlot.points = [(0, 0)]
         for key in averageConcs:
             self.dotPlot.points.append((key, -math.log10(averageConcs[key] / blankVal)))

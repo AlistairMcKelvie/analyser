@@ -42,14 +42,14 @@ class FileChooserScreen(Widget):
 
 
 class Main(App):
-    currentSampleSet = StringProperty('')
+    mode = StringProperty('calibration')
     measuredChannel = StringProperty('red')
     def build(self):
         self.mainMenuScreen = MainMenuScreen()
         self.imageMenuScreen = ImageMenuScreen()
         self.graphScreen = GraphScreen()
         Builder.load_file('color_reader.kv')
-        self.colorReaderScreen = ColorReaderScreen()
+        self.calibrationScreen = CalibrationScreen()
         self.fileChooserScreen = FileChooserScreen()
         return self.mainMenuScreen
     
@@ -69,10 +69,10 @@ class Main(App):
         Window.add_widget(self.fileChooserScreen)
 
 
-    def goto_color_reader(self, imageFile=None):
+    def goto_calibration_screen(self, imageFile=None):
         colorReader = self.colorReaderScreen.ids['colorReader']
         self.clearAllWidgets()
-        Window.add_widget(self.colorReaderScreen)
+        Window.add_widget(self.calibrationScreen)
         # color reader initialization
         self.imageFile = imageFile
         if imageFile is not None:

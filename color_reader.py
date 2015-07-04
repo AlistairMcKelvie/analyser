@@ -206,7 +206,7 @@ class ColorReader(Widget):
             self.spotButtonText[self.currentSpot - 1] = buttonStr
  
 
-class ColorReaderScreen(Widget):
+class CalibrationScreen(Widget):
     valTextWasModifiedByToggle = BooleanProperty(False)
 
 

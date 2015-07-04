@@ -282,8 +282,8 @@ class Main(App):
         if [i.type for i in colorReader.spots].count('Blank') == 0:
             print 'No blank!'
         else:
-            self.graphScreen.ids['graph'].updateGraph(colorReader.spotConcs,
-                                                      colorReader.spotVals)
+            self.graphScreen.ids['graph'].updateGraph([i.conc for i in colorReader.spots],
+                                                      [i.conc for i in colorReader.spots])i
         Window.remove_widget(self.fileChooserScreen)
         Window.remove_widget(self.colorReaderScreen)
         Window.add_widget(self.graphScreen)

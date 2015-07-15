@@ -15,10 +15,13 @@
         height: root.height * 0.85
         orientation: 'vertical'
         Button:
-            text: 'Go to graph'
-            on_release: 
-                app.writeSpotsToConfig()
-                app.goto_graph() 
+            text: 'Use this calibration'
+            on_release:
+                app.calib = app.calculateACalibCurve(app.calibrationScreen.ids['colorReader'].spots)
+                app.writeCalibFile(app.calibFile, app.calib)
+                app.writeStandards(app.stdsFile, app.calibrationScreen.ids['colorReader'].spots)
+                app.targetReaderScreen = 'sample'
+                app.goto_image_menu()
         TextInput:
             text: str(colorReader.currentSpotSize)
             font_size: self.height * 0.8
@@ -35,33 +38,14 @@
         Label:
             text: 'Std Conc'
             size_hint_y: 0.3
-        Button:
-            text: 'Save values and \nget new image'
-            on_release: app.writeStdsAndGetNewImage()
-        Button:
-            text: 'Send Mail'
-            on_release:
-                print 'doing send mail'
-                app.sendEmail()
         ToggleButton:
             id: blankToggle
             text: 'Blank'
-            group: 'blank/sample'
             state: 'down'
             on_release:
                 colorReader.currentSpotType = 'Blank'
                 colorReader.currentSpotConc = 0
                 if self.state == 'down':\ 
-                readerScreen.valTextWasModifiedByToggle = True
-                sampleValText.text = '-'
-        ToggleButton:
-            id: sampleToggle
-            text: 'Sample'
-            group: 'blank/sample'
-            on_release:
-                colorReader.currentSpotType = 'Sample'
-                colorReader.currentSpotConc = 9999
-                if self.state == 'down':\
                 readerScreen.valTextWasModifiedByToggle = True
                 sampleValText.text = '-'
         

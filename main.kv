@@ -3,11 +3,20 @@
     orientation: 'vertical'
     Button:
         text: 'Get New Calibration Set'
-        on_release: 
-            app.currentSampleSet = 'calibration'
+        on_release:
+            app.targetReaderScreen = 'calib' 
+            app.mode = 'calibration'
             app.goto_image_menu()
     Button:
         text: 'Load Old Calibration Set'
+        on_release:
+            app.calib = app.readCalibFile(app.calibFile)
+            print app.calib.M
+            print app.calib.C
+            print app.calib.R2
+            print app.calib.blank
+            app.targetReaderScreen = 'sample'
+            app.goto_image_menu()
 
 
 <ImageMenuScreen>:
@@ -32,7 +41,7 @@
             height: root.height * 0.25
             text: 'Go to analyser'
             on_release:
-                app.goto_color_reader()
+                app.goto_calibration_screen()
                 print R2.x
                 print R2.y
                 print R2.text_size
@@ -74,7 +83,7 @@
                 print os.getcwd()
                 print app.get_running_app().user_data_dir
                 app.readSpotsFromConfig()
-                app.goto_color_reader(fileChooser.selection[0])
+                app.goto_color_reader_screen(fileChooser.selection[0])
        
  
 <ColorReaderToggleButton@ToggleButton>:

@@ -236,3 +236,5 @@ class CalibrationScreen(Widget):
             self.valTextWasModifiedByToggle = False
 
 
+class SampleScreen(Widget):
+    pass

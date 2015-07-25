@@ -20,7 +20,9 @@ from PIL import Image as PILImage
 from PIL.ImageStat import Stat as imageStat
 
 class ColorReaderSpot(object):
-    def __init__(self, type='Blank', conc=0):
+    def __init__(self, idNo = None, type='Blank', conc=0):
+        self.idNo = idNo
+        self.sampleGrp = None
         self.type = type
         self.conc = conc
         # canvas instruction group
@@ -31,32 +33,33 @@ class ColorReaderSpot(object):
 
 
     def updateText(self):
-        if self.colorVal is None:
-            print 'No color value, not updating spot text'
-            return None
-        
-        if self.type == 'Std':
+        if self.type == 'Std' and self.conc is not None:
             typeText = 'Std ' + str(self.conc)
+        elif self.type == 'Sample':
+            typeText = 'Sample {0}.{1}'.format(self.sampleGrp, self.idNo)
         else:
             typeText = self.type
-        if self.colorMode == 'RGB':
-            print 'spot color type is RGB'
-            lStr = ('[b]{0}[/b]\nR: {1:03.0f}   G: {2:03.0f}   B: {3:03.0f}')
-            text = lStr.format(typeText, self.colorVal[0],
-                                    self.colorVal[1], self.colorVal[2])
-        elif self.colorMode == 'RGBA':
-            print 'spot colr type is RGBA'
-            lStr = ('[b]{0}[/b]\nR: {1:03.0f}   '
-                    'G: {2:03.0f}   B: {3:03.0f}   A: {4:03.0f}')
-            text = lStr.format(typeText, self.colorVal[0],
-                               self.colorVal[1], self.colorVal[2],
-                               self.colorVal[3])
-        elif self.colorMode is None:
-            print 'programming error color mode not set'
-            text = 'color mode not set'
+        if self.conc is not None:
+            if self.colorMode == 'RGB':
+                print 'spot color type is RGB'
+                lStr = ('[b]{0}[/b]\nR: {1:03.0f}   G: {2:03.0f}   B: {3:03.0f}')
+                text = lStr.format(typeText, self.colorVal[0],
+                                        self.colorVal[1], self.colorVal[2])
+            elif self.colorMode == 'RGBA':
+                print 'spot colr type is RGBA'
+                lStr = ('[b]{0}[/b]\nR: {1:03.0f}   '
+                        'G: {2:03.0f}   B: {3:03.0f}   A: {4:03.0f}')
+                text = lStr.format(typeText, self.colorVal[0],
+                                   self.colorVal[1], self.colorVal[2],
+                                   self.colorVal[3])
+            elif self.colorMode is None:
+                print 'programming error color mode not set'
+                text = 'color mode not set'
+            else:
+                print 'unknown color format'
+                text = 'unknown color format'
         else:
-            print 'unknown color format'
-            text = 'unknown color format'
+            text = typeText
         return text
 
 
@@ -103,7 +106,7 @@ class ColorReader(Widget):
     def __init__(self, **kwargs):
         super(ColorReader, self).__init__(**kwargs)
         self.spotColor = Color(0, 0, 0, 0.25)
-        self.spots = [ColorReaderSpot() for i in range(self.spotCount)]
+        self.spots = [ColorReaderSpot(idNo=i) for i in range(self.spotCount)]
         for spot in self.spots:
             spot.instGrp.add(self.spotColor)
             self.canvas.add(spot.instGrp)
@@ -152,14 +155,14 @@ class ColorReader(Widget):
             self.spots[self.currentSpot - 1].instGrp.add(self.spotColor)
             self.spots[self.currentSpot - 1].instGrp.add(touch.ud['Rectangle'])
 
-    
+ 
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
             print 'called on_touch_up'
             if self.imageFile != '':
                 self.readRectangle()
 
-    
+ 
     def startMoveBox(self, horiz, vert):
         self.horiz = horiz
         self.vert = vert

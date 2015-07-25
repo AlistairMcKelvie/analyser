@@ -82,9 +82,8 @@
                 print "PATHS-"
                 print os.getcwd()
                 print app.get_running_app().user_data_dir
-                app.readSpotsFromConfig()
                 app.goto_color_reader_screen(fileChooser.selection[0])
-       
+ 
  
 <ColorReaderToggleButton@ToggleButton>:
     group: 'select'
@@ -94,10 +93,10 @@
     valign: 'middle'
     markup: True
 
+
 <MsgPopup>:
-    size_hint: .7, .4
-    title: "Attention"
-    
+    size_hint: 0.7, 0.4
+    title: "Attention"    
     BoxLayout:
         orientation: 'vertical'
         padding: 10

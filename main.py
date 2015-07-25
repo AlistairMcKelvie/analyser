@@ -22,7 +22,10 @@ import math
 from collections import namedtuple
 
 from myGraph import MyGraph
-from color_reader import ColorReaderSpot, ColorReader, CalibrationScreen, SampleScreen
+from color_reader import ColorReaderSpot,\
+                         ColorReader,\
+                         CalibrationScreen,\
+                         SampleScreen
 from sendGmail import sendMail
 
 class MainMenuScreen(BoxLayout):
@@ -48,8 +51,10 @@ class Main(App):
     calibFile = StringProperty('')
 
     def build(self):
+        '''Runs when app starts'''
         self.stdsFile = self.user_data_dir + '/stds.csv'
         self.calibFile = self.user_data_dir + '/calib.txt'
+        self.samplesFile = self.user_data_dir + '/samples.csv'
         self.mainMenuScreen = MainMenuScreen()
         self.imageMenuScreen = ImageMenuScreen()
         self.graphScreen = GraphScreen()
@@ -57,6 +62,8 @@ class Main(App):
         self.calibrationScreen = CalibrationScreen()
         self.sampleScreen = SampleScreen()
         self.fileChooserScreen = FileChooserScreen()
+        self.initializeCalibSpots()
+        self.initializeSampleSpots()
         return self.mainMenuScreen
     
     
@@ -78,7 +85,8 @@ class Main(App):
     def goto_color_reader_screen(self, imageFile):
         assert '.jpg' in imageFile or '.png' in imageFile,\
             imageFile + ' not a valid image file, must be jpg or png'
-        assert self.targetReaderScreen == 'calib' or self.targetReaderScreen == 'sample',\
+        assert (self.targetReaderScreen == 'calib' or
+                self.targetReaderScreen == 'sample'),\
             'targetReaderScreen is set to {}, this is not valid option.'\
             .format(self.targetReaderScreen)
         if self.targetReaderScreen == 'calib':
@@ -115,20 +123,19 @@ class Main(App):
         Window.add_widget(self.graphScreen)
 
 
-    def readSpotsFromConfig(self):
-        calib = self.calibrationScreen.ids['colorReader']
+    def initializeCalibSpots(self):
+        reader = self.calibrationScreen.ids['colorReader']
         for i in range(self.spotCount):
             spotType = self.config.get('SpotTypes', str(i))
             if spotType != 'None':
-                calib.spots[i].type = spotType
-
+                reader.spots[i].type = spotType
             spotConc = self.config.get('SpotConcentrations', str(i))
             if spotConc != 'None' and spotConc != 'Blank':
-                    calib.spots[i].conc = float(spotConc)
+                    reader.spots[i].conc = float(spotConc)
 
             spotVal = self.config.get('SpotValues', str(i))
             if spotVal != 'None':
-                calib.spots[i].colorVal = [float(j) for j in \
+                reader.spots[i].colorVal = [float(j) for j in \
                                                  spotVal[1:-1].split(',')]
             
             spotSize = self.config.get('SpotSizes', str(i))
@@ -138,7 +145,24 @@ class Main(App):
             print 'spot x', spotX
             print 'spot y', spotY
             if spotSize != 'None':
-                calib.spots[i].instGrp.add(
+                reader.spots[i].instGrp.add(
+                        Rectangle(size=(float(spotSize), float(spotSize)),
+                                                           pos=(float(spotX),
+                                                               float(spotY))))
+
+
+    def initializeSampleSpots(self):
+        reader = self.sampleScreen.ids['colorReader']
+        for i in range(self.spotCount):
+            reader.spots[i].sampleGrp = 1
+            reader.spots[i].type = 'Sample'
+            reader.spots[i].conc = None
+            reader.spotVal = None
+            spotSize = self.config.get('SpotSizes', str(i))
+            spotX = self.config.get('SpotX', str(i))
+            spotY = self.config.get('SpotY', str(i))
+            if spotSize != 'None':
+                reader.spots[i].instGrp.add(
                         Rectangle(size=(float(spotSize), float(spotSize)),
                                                            pos=(float(spotX),
                                                                float(spotY))))
@@ -197,29 +221,53 @@ class Main(App):
         print 'got to camera callback'
 
 
-    def writeStandards(self, stdsFile, spots):
-        openMode = 'wb'
-        channelIndex = self.channelIndexFromName()
-        fieldNames = ['known_concentration', 'red',
-                      'green', 'blue', 'measured_channel', 'A',
-                      'calculated_concentration']
-        with open(stdsFile, openMode) as sFile:
+    def writeRawData(self, calib, stdsFile, spots, firstWrite=False):
+        fieldNames = ['type', 'sample_group', 'sample_no',
+                      'known_concentration', 'calculated_concentration',
+                      'red','green', 'blue', 'alpha', 'measured_channel']
+        if firstWrite:
+            with open(stdsFile, 'wb') as sFile:
+                csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
+                csvWriter.writeheader()
+        with open(stdsFile, 'ab') as sFile:
             csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
-            csvWriter.writeheader()
-            for i in range(self.spotCount):
-                alpha = -math.log10(spots[i].colorVal[channelIndex] /
-                                    self.calib.blank)
-                calculatedConc = (alpha - self.calib.C) / self.calib.M
-                conc = spots[i].conc
+            for spot in spots:
+                if spot.type == 'Blank' or spot.type == 'Std':
+                    type = 'Standard'
+                    conc = spot.conc
+                    sample_group = ''
+                    sample_no = ''
+                elif spot.type == 'Sample':
+                    type = 'Sample'
+                    conc = ''
+                    sample_group = spot.sampleGrp
+                    sample_no = spot.idNo
+                calculatedConc = self.calculateConc(calib, spot.colorVal)
+                if spot.colorMode == 'RGBA':
+                    alpha = spots[i] = spot.colorVal[3]
+                else:
+                    alpha = ''
                 csvWriter.writerow(
-                    {'known_concentration': conc,
-                     'red': '{:.3f}'.format(spots[i].colorVal[0]),
-                     'green': '{:.3f}'.format(spots[i].colorVal[1]),
-                     'blue': '{:.3f}'.format(spots[i].colorVal[2]),
+                        {'type': type,
+                         'sample_group': sample_group,
+                         'sample_no': sample_no,
+                        'known_concentration': conc,
+                     'red': '{:.3f}'.format(spot.colorVal[0]),
+                     'green': '{:.3f}'.format(spot.colorVal[1]),
+                     'blue': '{:.3f}'.format(spot.colorVal[2]),
+                     'alpha': alpha,
                      'measured_channel': self.measuredChannel,
-                     'A': '{:.3f}'.format(alpha),
                      'calculated_concentration': '{:.3f}'.format(calculatedConc)})
 
+    
+    def calculateConc(self, calib, colorVal):
+       val = colorVal[self.channelIndexFromName(calib.channel)]
+       A = math.log10(val) / calib.blank
+       return (A - calib.C) / calib.M
+
+    def writeSamples(self, samplesFile, spots):
+        openMode = 'ab'
+        fieldNames = ['red', 'green', 'blue', 'measured_channel']
 
     def writeCalibFile(self, calibFile, calib):
         with open(calibFile, 'wb') as f:
@@ -227,6 +275,7 @@ class Main(App):
             f.write('C: {}\n'.format(calib.C))
             f.write('R2: {}\n'.format(calib.R2))
             f.write('Blank: {}\n'.format(calib.blank))
+            f.write('Measured Channel: {}\n'.format(calib.channel))            
 
 
     def readCalibFile(self, calibFile):
@@ -235,13 +284,14 @@ class Main(App):
             C = f.next().split()[1]
             R2 = f.next().split()[1]
             blank = f.next().split()[1]
-        Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'blank'])
-        return Calib(M=M, C=C, R2=R2, blank=blank)
+            measuredChannel = f.next().split()[1]
+        Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'blank', 'channel'])
+        return Calib(M=M, C=C, R2=R2, blank=blank, measuredChannel=measuredChannel)
 
 
     def calculateACalibCurve(self, spots):
         calibPoints = []
-        channelIndex = self.channelIndexFromName()
+        channelIndex = self.channelIndexFromName(self.measuredChannel)
         colorValSumDict = {}
         colorValCountDict = {}
         colorValAverageDict = {}
@@ -299,18 +349,18 @@ class Main(App):
             print 'SStot', SStot
             R2 = 1 - SSres / SStot
             print 'R2 = {:.5f}'.format(R2)
-            Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'blank'])
-            return Calib(M=M, C=C, R2=R2, blank=blankVal)
+            Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'blank', 'channel'])
+            return Calib(M=M, C=C, R2=R2, blank=blankVal, channel=self.measuredChannel)
             
         
-    def channelIndexFromName(self):
-        if self.measuredChannel == 'red':
+    def channelIndexFromName(self, measuredChannel):
+        if measuredChannel == 'red':
             return 0
-        if self.measuredChannel == 'green':
+        if measuredChannel == 'green':
             return 1
-        if self.measuredChannel == 'blue':
+        if measuredChannel == 'blue':
             return 2
-        raise RuntimeError('{} is not a valid channel name.'.format(self.measuredChannel))
+        raise RuntimeError('{} is not a valid channel name.'.format(measuredChannel))
 
 
 class MsgPopup(Popup):

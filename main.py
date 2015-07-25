@@ -244,14 +244,14 @@ class Main(App):
                     sample_no = spot.idNo
                 calculatedConc = self.calculateConc(calib, spot.colorVal)
                 if spot.colorMode == 'RGBA':
-                    alpha = spots[i] = spot.colorVal[3]
+                    alpha = '{:.3f}'.format(spot.colorVal[3])
                 else:
                     alpha = ''
                 csvWriter.writerow(
-                        {'type': type,
-                         'sample_group': sample_group,
-                         'sample_no': sample_no,
-                        'known_concentration': conc,
+                    {'type': type,
+                     'sample_group': sample_group,
+                     'sample_no': sample_no,
+                     'known_concentration': conc,
                      'red': '{:.3f}'.format(spot.colorVal[0]),
                      'green': '{:.3f}'.format(spot.colorVal[1]),
                      'blue': '{:.3f}'.format(spot.colorVal[2]),
@@ -265,9 +265,20 @@ class Main(App):
        A = math.log10(val) / calib.blank
        return (A - calib.C) / calib.M
 
-    def writeSamples(self, samplesFile, spots):
-        openMode = 'ab'
-        fieldNames = ['red', 'green', 'blue', 'measured_channel']
+    def writeSamplesFile(self, calib, samplesFile, spots):
+        fieldNames = ['sample_group', 'calculated_concentration']
+        concSum = 0
+        sampleGrp = None
+        for spot in spots:
+            assert sampleGrp is None or spot.sampleGroup == sampleGrp:
+            concSum += self.calculateConc(calib, spot.colorVal)
+            sampleGrp = spot.sampleGrp
+        concMean = concSum // len(spots)
+        with open(samplesFile, 'ab') as f:
+            csvWriter = csv.DictWriter(f, fieldNames)
+            csvWriter.writerow({'sample_group': sampleGrp,
+                                'calculated_concentration': concMean}
+
 
     def writeCalibFile(self, calibFile, calib):
         with open(calibFile, 'wb') as f:

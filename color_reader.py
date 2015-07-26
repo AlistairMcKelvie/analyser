@@ -36,7 +36,7 @@ class ColorReaderSpot(object):
         if self.type == 'Std' and self.conc is not None:
             typeText = 'Std ' + str(self.conc)
         elif self.type == 'Sample':
-            typeText = 'Sample {0}.{1}'.format(self.sampleGrp, self.idNo)
+            typeText = 'Sample {0}-{1}'.format(self.sampleGrp, self.idNo)
         else:
             typeText = self.type
         if self.conc is not None:
@@ -66,7 +66,7 @@ class ColorReaderSpot(object):
 class ColorReader(Widget):
     imageFile = StringProperty('')
     spotCount = NumericProperty(15)
-    currentSpot = NumericProperty(1)
+    currentSpot = ObjectProperty(None)
     currentSpotType = StringProperty('Blank')
     currentSpotSize = NumericProperty(15)
     currentSpotConc = ObjectProperty(0)
@@ -106,12 +106,12 @@ class ColorReader(Widget):
     def __init__(self, **kwargs):
         super(ColorReader, self).__init__(**kwargs)
         self.spotColor = Color(0, 0, 0, 0.25)
-        self.spots = [ColorReaderSpot(idNo=i) for i in range(self.spotCount)]
+        self.spots = [ColorReaderSpot(idNo=i+1) for i in range(self.spotCount)]
         for spot in self.spots:
             spot.instGrp.add(self.spotColor)
             self.canvas.add(spot.instGrp)
-        self.initialImageAndDrawDone = False
         self.analysisImage = None
+        self.currentSpot = self.spots[0]
         
 
     def initialDraw(self):
@@ -119,11 +119,15 @@ class ColorReader(Widget):
         self.analysisImage = self.analysisImage.transpose(\
             PILImage.FLIP_TOP_BOTTOM)
         
-        for i in range(self.spotCount):
-            self.spots[i].colorMode = self.analysisImage.mode
-            buttonStr = self.spots[i].updateText()
+        for spot in self.spots:
+            spot.colorMode = self.analysisImage.mode
+            self.readSpot(self.analysisImage, 
+                          self.currentSpot,
+                          self.currentSpotType,
+                          self.currentSpotConc)
+            buttonStr = spot.updateText()
             if buttonStr is not None:
-                self.spotButtonText[i] = buttonStr
+                self.spotButtonText[spot.idNo] = buttonStr
 
  
     def updateSpotSize(self, spotSize):
@@ -136,31 +140,37 @@ class ColorReader(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             print 'called on_touch_down'
-            self.spots[self.currentSpot - 1].instGrp.clear()
+            self.currentSpot.instGrp.clear()
             size = self.currentSpotSize
             print size
-            self.spots[self.currentSpot - 1].instGrp.add(self.spotColor)
+            self.currentSpot.instGrp.add(self.spotColor)
             touch.ud['Rectangle'] = Rectangle(pos=(touch.x - size / 2,
                                                    touch.y - size / 2),
                                               size=(size, size))
-            self.spots[self.currentSpot - 1].instGrp.add(touch.ud['Rectangle'])
+            self.currentSpot.instGrp.add(touch.ud['Rectangle'])
 
 
     def on_touch_move(self, touch):
         if self.collide_point(*touch.pos):
             print 'called on_touch_move'
             size = self.currentSpotSize
-            self.spots[self.currentSpot - 1].instGrp.clear()
+            self.currentSpot.instGrp.clear()
             touch.ud['Rectangle'].pos = (touch.x - size / 2, touch.y - size / 2)
-            self.spots[self.currentSpot - 1].instGrp.add(self.spotColor)
-            self.spots[self.currentSpot - 1].instGrp.add(touch.ud['Rectangle'])
+            self.currentSpot.instGrp.add(self.spotColor)
+            self.currentSpot.instGrp.add(touch.ud['Rectangle'])
 
  
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
             print 'called on_touch_up'
-            if self.imageFile != '':
-                self.readRectangle()
+            self.readSpot(self.analysisImage, 
+                          self.currentSpot,
+                          self.currentSpotType,
+                          self.currentSpotConc)
+            buttonStr = self.currentSpot.updateText()
+
+            if buttonStr is not None:
+                self.spotButtonText[self.currentSpot.idNo - 1] = buttonStr
 
  
     def startMoveBox(self, horiz, vert):
@@ -177,22 +187,23 @@ class ColorReader(Widget):
     def moveBox(self, *args):
         horiz = self.horiz
         vert = self.vert
-        if len(self.instructions[self.currentSpot - 1].children) == 3:
-            pos = self.instructions[self.currentSpot - 1].children[2].pos
-            self.instructions[self.currentSpot - 1].children[2].pos = (pos[0] + horiz,
-                                                                       pos[1] + vert)
-            self.readRectangle()
+        assert (self.currentSpot.instGrp.childern) == 3
+        pos = self.currentSpot.instGrp.children[2].pos
+        self.currentSpot.instGrp.children[2].pos = (pos[0] + horiz,
+                                                    pos[1] + vert)
+        self.readSpot(self.analysisImage, 
+                      self.currentSpot,
+                      self.currentSpotType,
+                      self.currentSpotConc)
 
 
-    def readRectangle(self):
+    def readSpot(self, image, spot, currentSpotType, currentSpotConc):
         image = self.analysisImage
-        self.spots[self.currentSpot - 1].type = self.currentSpotType
-        self.spots[self.currentSpot - 1].conc = self.currentSpotConc
-        spotSize = self.spots[self.currentSpot - 1].instGrp.children[2].size[0]
-        print 'spot no', self.currentSpot
-        print 'instruction list', self.spots[self.currentSpot - 1].instGrp.children
-        spotX = self.spots[self.currentSpot - 1].instGrp.children[2].pos[0]
-        spotY = self.spots[self.currentSpot - 1].instGrp.children[2].pos[1]
+        spot.type = currentSpotType
+        spot.conc = currentSpotConc
+        spotSize = spot.instGrp.children[2].size[0]
+        spotX = spot.instGrp.children[2].pos[0]
+        spotY = spot.instGrp.children[2].pos[1]
         scaled_x = int((spotX - self.x) * (image.size[0] / float(self.width)))
         scaled_y = int((spotY - self.y) * (image.size[1] / float(self.height)))
         scaled_spotWidth = int(spotSize * (image.size[0] / float(self.width)))
@@ -201,12 +212,8 @@ class ColorReader(Widget):
                                    scaled_x + scaled_spotWidth,
                                    scaled_y + scaled_spotHeight))
         color = imageStat(croppedImage).mean
-        self.spots[self.currentSpot - 1].colorVal = color
-        self.spots[self.currentSpot - 1].colorMode = image.mode
-        buttonStr = self.spots[self.currentSpot - 1].updateText()
-
-        if buttonStr is not None:
-            self.spotButtonText[self.currentSpot - 1] = buttonStr
+        spot.colorVal = color
+        spot.colorMode = image.mode
  
 
 class CalibrationScreen(Widget):
@@ -224,7 +231,7 @@ class CalibrationScreen(Widget):
                 self.ids['sampleValText'].text = 0
             print text
             try:
-                self.ids['colorReader'].spots[currentSpot - 1].conc = float(text)
+                self.ids['colorReader'].currentSpot.conc = float(text)
                 self.ids['colorReader'].currentSpotConc = float(text)
                 print self.ids['colorReader'].currentSpotConc
                 self.ids['sampleToggle'].state = 'normal'

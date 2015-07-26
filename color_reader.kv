@@ -18,7 +18,7 @@
             on_release:
                 app.calib = app.calculateACalibCurve(app.calibrationScreen.ids['colorReader'].spots)
                 app.writeCalibFile(app.calibFile, app.calib)
-                app.writeRawData(app.calib, app.stdsFile, app.calibrationScreen.ids['colorReader'].spots, firstWrite=True)
+                app.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, firstWrite=True)
                 app.targetReaderScreen = 'sample'
                 app.goto_image_menu()
         TextInput:
@@ -113,57 +113,57 @@
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[0]
             state: 'down'
-            on_press: colorReader.currentSpot = 1
+            on_press: colorReader.currentSpot = colorReader.spots[0]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[1]
-            on_press: colorReader.currentSpot = 2
+            on_press: colorReader.currentSpot = colorReader.spots[1]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[2]
-            on_press: colorReader.currentSpot = 3
+            on_press: colorReader.currentSpot = colorReader.spots[2]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[3]
-            on_press: colorReader.currentSpot = 4
+            on_press: colorReader.currentSpot = colorReader.spots[3]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[4]
-            on_press: colorReader.currentSpot = 5
+            on_press: colorReader.currentSpot = colorReader.spots[4]
     BoxLayout:
         width: root.width
         y: root.height * 0.05
         height: root.height * 0.05
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[5]
-            on_press: colorReader.currentSpot = 6
+            on_press: colorReader.currentSpot = colorReader.spots[5]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[6]
-            on_press: colorReader.currentSpot = 7
+            on_press: colorReader.currentSpot = colorReader.spots[6]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[7]
-            on_press: colorReader.currentSpot = 8
+            on_press: colorReader.currentSpot = colorReader.spots[7]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[8]
-            on_press: colorReader.currentSpot = 9
+            on_press: colorReader.currentSpot = colorReader.spots[8]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[9]
-            on_press: colorReader.currentSpot = 10
+            on_press: colorReader.currentSpot = colorReader.spots[9]
     BoxLayout:
         width: root.width
         y: 0
         height: root.height * 0.05
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[10]
-            on_press: colorReader.currentSpot = 11
+            on_press: colorReader.currentSpot = colorReader.spots[10]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[11]
-            on_press: colorReader.currentSpot = 12
+            on_press: colorReader.currentSpot = colorReader.spots[11]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[12]
-            on_press: colorReader.currentSpot = 13
+            on_press: colorReader.currentSpot = colorReader.spots[12]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[13]
-            on_press: colorReader.currentSpot = 14
+            on_press: colorReader.currentSpot = colorReader.spots[13]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[14]
-            on_press: colorReader.currentSpot = 15
+            on_press: colorReader.currentSpot = colorReader.spots[14]
 
 
 <SampleScreen>:
@@ -199,7 +199,10 @@
             size_hint_y: 0.3
         Button:
             text: 'Save values and \nget new image'
-            on_release: app.writeSamles() 
+            on_release:
+                app.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots)
+                app.writeSamplesFile(app.calib, app.samplesFile, app.sampleScreen.ids['colorReader'].spots)
+                app.goto_image_menu()
         RelativeLayout:
             cols: 3
             row: 3
@@ -266,55 +269,55 @@
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[0]
             state: 'down'
-            on_press: colorReader.currentSpot = 1
+            on_press: colorReader.currentSpot = colorReader.spots[0]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[1]
-            on_press: colorReader.currentSpot = 2
+            on_press: colorReader.currentSpot = colorReader.spots[1]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[2]
-            on_press: colorReader.currentSpot = 3
+            on_press: colorReader.currentSpot = colorReader.spots[2]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[3]
-            on_press: colorReader.currentSpot = 4
+            on_press: colorReader.currentSpot = colorReader.spots[3]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[4]
-            on_press: colorReader.currentSpot = 5
+            on_press: colorReader.currentSpot = colorReader.spots[4]
     BoxLayout:
         width: root.width
         y: root.height * 0.05
         height: root.height * 0.05
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[5]
-            on_press: colorReader.currentSpot = 6
+            on_press: colorReader.currentSpot = colorReader.spots[5]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[6]
-            on_press: colorReader.currentSpot = 7
+            on_press: colorReader.currentSpot = colorReader.spots[6]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[7]
-            on_press: colorReader.currentSpot = 8
+            on_press: colorReader.currentSpot = colorReader.spots[7]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[8]
-            on_press: colorReader.currentSpot = 9
+            on_press: colorReader.currentSpot = colorReader.spots[8]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[9]
-            on_press: colorReader.currentSpot = 10
+            on_press: colorReader.currentSpot = colorReader.spots[9]
     BoxLayout:
         width: root.width
         y: 0
         height: root.height * 0.05
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[10]
-            on_press: colorReader.currentSpot = 11
+            on_press: colorReader.currentSpot = colorReader.spots[10]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[11]
-            on_press: colorReader.currentSpot = 12
+            on_press: colorReader.currentSpot = colorReader.spots[11]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[12]
-            on_press: colorReader.currentSpot = 13
+            on_press: colorReader.currentSpot = colorReader.spots[12]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[13]
-            on_press: colorReader.currentSpot = 14
+            on_press: colorReader.currentSpot = colorReader.spots[13]
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[14]
-            on_press: colorReader.currentSpot = 15
+            on_press: colorReader.currentSpot = colorReader.spots[14]
 

@@ -52,7 +52,7 @@ class Main(App):
 
     def build(self):
         '''Runs when app starts'''
-        self.stdsFile = self.user_data_dir + '/stds.csv'
+        self.rawFile = self.user_data_dir + '/stds.csv'
         self.calibFile = self.user_data_dir + '/calib.txt'
         self.samplesFile = self.user_data_dir + '/samples.csv'
         self.mainMenuScreen = MainMenuScreen()
@@ -66,7 +66,7 @@ class Main(App):
         self.initializeSampleSpots()
         return self.mainMenuScreen
     
-    
+
     def goto_image_menu(self):
         print 'self.directory', self.directory
         print 'self.user_data_dir', self.user_data_dir
@@ -108,7 +108,6 @@ class Main(App):
                           pos=(readerScreen.width * 0.2,
                                readerScreen.height * 0.15))
         reader.initialDraw()
-        reader.initialImageAndDrawDone = True
 
 
     def goto_graph(self):
@@ -125,47 +124,48 @@ class Main(App):
 
     def initializeCalibSpots(self):
         reader = self.calibrationScreen.ids['colorReader']
-        for i in range(self.spotCount):
-            spotType = self.config.get('SpotTypes', str(i))
+        for spot in reader.spots:
+            spotType = self.config.get('SpotTypes', str(spot.idNo))
             if spotType != 'None':
-                reader.spots[i].type = spotType
-            spotConc = self.config.get('SpotConcentrations', str(i))
+                spot.type = spotType
+            spotConc = self.config.get('SpotConcentrations', str(spot.idNo))
             if spotConc != 'None' and spotConc != 'Blank':
-                    reader.spots[i].conc = float(spotConc)
-
-            spotVal = self.config.get('SpotValues', str(i))
-            if spotVal != 'None':
-                reader.spots[i].colorVal = [float(j) for j in \
-                                                 spotVal[1:-1].split(',')]
-            
-            spotSize = self.config.get('SpotSizes', str(i))
-            spotX = self.config.get('SpotX', str(i))
-            spotY = self.config.get('SpotY', str(i))
+                spot.conc = float(spotConc)
+            spotSize = self.config.get('SpotSizes', str(spot.idNo))
+            spotX = self.config.get('SpotX', str(spot.idNo))
+            spotY = self.config.get('SpotY', str(spot.idNo))
             print 'spot size', spotSize
             print 'spot x', spotX
             print 'spot y', spotY
             if spotSize != 'None':
-                reader.spots[i].instGrp.add(
-                        Rectangle(size=(float(spotSize), float(spotSize)),
-                                                           pos=(float(spotX),
-                                                               float(spotY))))
+                spot.instGrp.add(Rectangle(size=(float(spotSize),
+                                                 float(spotSize)),
+                                           pos=(float(spotX),
+                                                float(spotY))))
 
 
     def initializeSampleSpots(self):
         reader = self.sampleScreen.ids['colorReader']
-        for i in range(self.spotCount):
-            reader.spots[i].sampleGrp = 1
-            reader.spots[i].type = 'Sample'
-            reader.spots[i].conc = None
-            reader.spotVal = None
-            spotSize = self.config.get('SpotSizes', str(i))
-            spotX = self.config.get('SpotX', str(i))
-            spotY = self.config.get('SpotY', str(i))
+        reader.currentSpotType = 'Sample'
+        for spot in reader.spots:
+            spot.sampleGrp = 1
+            spot.type = 'Sample'
+            spot.conc = None
+            spot.colorVal = None
+            spotSize = self.config.get('SpotSizes', str(spot.idNo))
+            spotX = self.config.get('SpotX', str(spot.idNo))
+            spotY = self.config.get('SpotY', str(spot.idNo))
             if spotSize != 'None':
-                reader.spots[i].instGrp.add(
-                        Rectangle(size=(float(spotSize), float(spotSize)),
-                                                           pos=(float(spotX),
-                                                               float(spotY))))
+                spots.instGrp.add(Rectangle(size=(float(spotSize),
+                                                  float(spotSize)),
+                                            pos=(float(spotX),
+                                                 float(spotY))))
+
+
+    def clearSampleSpots(self):
+        sampleGrp = self.sampleScreen.ids['colorReader'].spots[i].sampleGrp + 1
+        for spot in self.sampleScreen.ids['colorReader'].spots:
+            spot.sampleGrp = sampleGrp
 
 
     def writeSpotsToConfig(self):
@@ -183,14 +183,15 @@ class Main(App):
 
 
     def build_config(self, config):
-        config.setdefaults('SpotCount', {'spotCount': 15})
-        self.spotCount = int(config.get('SpotCount', 'spotCount'))
+        config.setdefaults('defaults', {'spotCount': 15})
+        config.setdefaults('defaults', {'spotSize': 10})
+        self.spotCount = int(config.get('defaults', 'spotCount'))
+        self.defaultSpotSize = int(config.get('defaults', 'spotSize') 
         noneDict = {}
-        for i in range(self.spotCount):
+        for i in range(1, self.spotCount + 1):
             noneDict[str(i)] = None
         config.setdefaults('SpotTypes', noneDict)
         config.setdefaults('SpotConcentrations', noneDict)
-        config.setdefaults('SpotValues', noneDict)
         config.setdefaults('SpotSizes', noneDict)
         config.setdefaults('SpotX', noneDict)
         config.setdefaults('SpotY', noneDict)
@@ -221,15 +222,15 @@ class Main(App):
         print 'got to camera callback'
 
 
-    def writeRawData(self, calib, stdsFile, spots, firstWrite=False):
+    def writeRawData(self, calib, rawFile, spots, firstWrite=False):
         fieldNames = ['type', 'sample_group', 'sample_no',
                       'known_concentration', 'calculated_concentration',
                       'red','green', 'blue', 'alpha', 'measured_channel']
         if firstWrite:
-            with open(stdsFile, 'wb') as sFile:
+            with open(rawFile, 'wb') as sFile:
                 csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
                 csvWriter.writeheader()
-        with open(stdsFile, 'ab') as sFile:
+        with open(rawFile, 'ab') as sFile:
             csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
             for spot in spots:
                 if spot.type == 'Blank' or spot.type == 'Std':
@@ -270,14 +271,14 @@ class Main(App):
         concSum = 0
         sampleGrp = None
         for spot in spots:
-            assert sampleGrp is None or spot.sampleGroup == sampleGrp:
+            assert sampleGrp is None or spot.sampleGrp == sampleGrp
             concSum += self.calculateConc(calib, spot.colorVal)
             sampleGrp = spot.sampleGrp
         concMean = concSum // len(spots)
         with open(samplesFile, 'ab') as f:
             csvWriter = csv.DictWriter(f, fieldNames)
             csvWriter.writerow({'sample_group': sampleGrp,
-                                'calculated_concentration': concMean}
+                                'calculated_concentration': concMean})
 
 
     def writeCalibFile(self, calibFile, calib):

@@ -28,6 +28,7 @@ from color_reader import ColorReaderSpot,\
                          SampleScreen
 from sendGmail import sendMail
 
+
 class MainMenuScreen(BoxLayout):
     pass
 
@@ -52,7 +53,7 @@ class Main(App):
 
     def build(self):
         '''Runs when app starts'''
-        self.rawFile = self.user_data_dir + '/stds.csv'
+        self.rawFile = self.user_data_dir + '/raw.csv'
         self.calibFile = self.user_data_dir + '/calib.txt'
         self.samplesFile = self.user_data_dir + '/samples.csv'
         self.mainMenuScreen = MainMenuScreen()
@@ -64,6 +65,7 @@ class Main(App):
         self.fileChooserScreen = FileChooserScreen()
         self.initializeCalibSpots()
         self.initializeSampleSpots()
+        self.firstSample = True
         return self.mainMenuScreen
     
 
@@ -156,7 +158,7 @@ class Main(App):
             spotX = self.config.get('SpotX', str(spot.idNo))
             spotY = self.config.get('SpotY', str(spot.idNo))
             if spotSize != 'None':
-                spots.instGrp.add(Rectangle(size=(float(spotSize),
+                spot.instGrp.add(Rectangle(size=(float(spotSize),
                                                   float(spotSize)),
                                             pos=(float(spotX),
                                                  float(spotY))))
@@ -173,7 +175,6 @@ class Main(App):
         for i in range(self.spotCount):
             self.config.set('SpotTypes', str(i), colorReader.spots[i].type)
             self.config.set('SpotConcentrations', str(i), colorReader.spots[i].conc)
-            self.config.set('SpotValues', str(i), colorReader.spots[i].colorVal)
             graphicsInstructs = colorReader.spots[i].instGrp.children
             if len(graphicsInstructs) == 3:
                 self.config.set('SpotSizes', str(i), int(graphicsInstructs[2].size[0]))
@@ -186,7 +187,7 @@ class Main(App):
         config.setdefaults('defaults', {'spotCount': 15})
         config.setdefaults('defaults', {'spotSize': 10})
         self.spotCount = int(config.get('defaults', 'spotCount'))
-        self.defaultSpotSize = int(config.get('defaults', 'spotSize') 
+        self.defaultSpotSize = int(config.get('defaults', 'spotSize')) 
         noneDict = {}
         for i in range(1, self.spotCount + 1):
             noneDict[str(i)] = None
@@ -260,14 +261,19 @@ class Main(App):
                      'measured_channel': self.measuredChannel,
                      'calculated_concentration': '{:.3f}'.format(calculatedConc)})
 
-    
+
     def calculateConc(self, calib, colorVal):
        val = colorVal[self.channelIndexFromName(calib.channel)]
        A = math.log10(val) / calib.blank
        return (A - calib.C) / calib.M
 
-    def writeSamplesFile(self, calib, samplesFile, spots):
+
+    def writeSamplesFile(self, calib, samplesFile, spots, firstWrite=False):
         fieldNames = ['sample_group', 'calculated_concentration']
+        if firstWrite:
+            with open(samplesFile, 'wb') as f:
+                csvWriter = csv.DictWriter(f, fieldNames)
+                csvWriter.writeheader()
         concSum = 0
         sampleGrp = None
         for spot in spots:
@@ -330,7 +336,7 @@ class Main(App):
         for key in colorValAverageDict:
             calibPoints.append((key, -math.log10(colorValAverageDict[key] / blankVal)))
         print calibPoints
-        
+
         # Make calibration curve
         N = len(calibPoints)
         if N >= 2:

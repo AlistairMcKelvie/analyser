@@ -201,7 +201,9 @@
             text: 'Save values and \nget new image'
             on_release:
                 app.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots)
-                app.writeSamplesFile(app.calib, app.samplesFile, app.sampleScreen.ids['colorReader'].spots)
+                app.writeSamplesFile(app.calib, app.samplesFile, app.sampleScreen.ids['colorReader'].spots, app.firstSample)
+                app.firstSample = False
+                app.clearSampleSpots()
                 app.goto_image_menu()
         RelativeLayout:
             cols: 3

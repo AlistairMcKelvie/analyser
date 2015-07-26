@@ -120,14 +120,14 @@ class ColorReader(Widget):
             PILImage.FLIP_TOP_BOTTOM)
         
         for spot in self.spots:
-            spot.colorMode = self.analysisImage.mode
-            self.readSpot(self.analysisImage, 
-                          self.currentSpot,
-                          self.currentSpotType,
-                          self.currentSpotConc)
-            buttonStr = spot.updateText()
-            if buttonStr is not None:
-                self.spotButtonText[spot.idNo] = buttonStr
+            if len(spot.instGrp.children) > 1:
+                assert len(spot.instGrp.children) == 3
+                spot.colorMode = self.analysisImage.mode
+                spot.type = self.currentSpotType
+                spot.conc = self.currentSpotConc
+                self.readSpot(self.analysisImage, spot)
+                buttonStr = spot.updateText()
+                self.spotButtonText[spot.idNo - 1] = buttonStr
 
  
     def updateSpotSize(self, spotSize):
@@ -163,14 +163,12 @@ class ColorReader(Widget):
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
             print 'called on_touch_up'
+            self.currentSpot.type = self.currentSpotType
+            self.currentSpot.conc = self.currentSpotConc
             self.readSpot(self.analysisImage, 
-                          self.currentSpot,
-                          self.currentSpotType,
-                          self.currentSpotConc)
+                          self.currentSpot)
             buttonStr = self.currentSpot.updateText()
-
-            if buttonStr is not None:
-                self.spotButtonText[self.currentSpot.idNo - 1] = buttonStr
+            self.spotButtonText[self.currentSpot.idNo - 1] = buttonStr
 
  
     def startMoveBox(self, horiz, vert):
@@ -187,7 +185,7 @@ class ColorReader(Widget):
     def moveBox(self, *args):
         horiz = self.horiz
         vert = self.vert
-        assert (self.currentSpot.instGrp.childern) == 3
+        assert len(self.currentSpot.instGrp.children) == 3
         pos = self.currentSpot.instGrp.children[2].pos
         self.currentSpot.instGrp.children[2].pos = (pos[0] + horiz,
                                                     pos[1] + vert)
@@ -197,10 +195,7 @@ class ColorReader(Widget):
                       self.currentSpotConc)
 
 
-    def readSpot(self, image, spot, currentSpotType, currentSpotConc):
-        image = self.analysisImage
-        spot.type = currentSpotType
-        spot.conc = currentSpotConc
+    def readSpot(self, image, spot):
         spotSize = spot.instGrp.children[2].size[0]
         spotX = spot.instGrp.children[2].pos[0]
         spotY = spot.instGrp.children[2].pos[1]
@@ -234,8 +229,6 @@ class CalibrationScreen(Widget):
                 self.ids['colorReader'].currentSpot.conc = float(text)
                 self.ids['colorReader'].currentSpotConc = float(text)
                 print self.ids['colorReader'].currentSpotConc
-                self.ids['sampleToggle'].state = 'normal'
-                self.ids['sampleToggle'].background = 'normal'
                 self.ids['blankToggle'].state = 'normal'
                 self.ids['blankToggle'].background = 'normal'
                 self.ids['colorReader'].currentSpotType = 'Std'

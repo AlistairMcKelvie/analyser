@@ -27,6 +27,7 @@ from color_reader import ColorReaderSpot,\
                          CalibrationScreen,\
                          SampleScreen
 from sendGmail import sendMail
+from datetime import datetime
 
 
 class MainMenuScreen(BoxLayout):
@@ -53,9 +54,6 @@ class Main(App):
 
     def build(self):
         '''Runs when app starts'''
-        self.rawFile = self.user_data_dir + '/raw.csv'
-        self.calibFile = self.user_data_dir + '/calib.txt'
-        self.samplesFile = self.user_data_dir + '/samples.csv'
         self.mainMenuScreen = MainMenuScreen()
         self.imageMenuScreen = ImageMenuScreen()
         self.graphScreen = GraphScreen()
@@ -165,7 +163,7 @@ class Main(App):
 
 
     def clearSampleSpots(self):
-        sampleGrp = self.sampleScreen.ids['colorReader'].spots[i].sampleGrp + 1
+        sampleGrp = self.sampleScreen.ids['colorReader'].spots[0].sampleGrp + 1
         for spot in self.sampleScreen.ids['colorReader'].spots:
             spot.sampleGrp = sampleGrp
 
@@ -280,7 +278,7 @@ class Main(App):
             assert sampleGrp is None or spot.sampleGrp == sampleGrp
             concSum += self.calculateConc(calib, spot.colorVal)
             sampleGrp = spot.sampleGrp
-        concMean = concSum // len(spots)
+        concMean = concSum / float(len(spots))
         with open(samplesFile, 'ab') as f:
             csvWriter = csv.DictWriter(f, fieldNames)
             csvWriter.writerow({'sample_group': sampleGrp,
@@ -367,10 +365,12 @@ class Main(App):
             print 'SStot', SStot
             R2 = 1 - SSres / SStot
             print 'R2 = {:.5f}'.format(R2)
-            Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'blank', 'channel'])
-            return Calib(M=M, C=C, R2=R2, blank=blankVal, channel=self.measuredChannel)
-            
-        
+            Calib = namedtuple('CalibCurve', ['M', 'C', 'R2',
+                               'blank', 'channel'])
+            return Calib(M=M, C=C, R2=R2, blank=blankVal,
+                         channel=self.measuredChannel)
+
+
     def channelIndexFromName(self, measuredChannel):
         if measuredChannel == 'red':
             return 0
@@ -378,7 +378,16 @@ class Main(App):
             return 1
         if measuredChannel == 'blue':
             return 2
-        raise RuntimeError('{} is not a valid channel name.'.format(measuredChannel))
+        raise RuntimeError('{} is not a valid channel '
+                           'name.'.format(measuredChannel))
+
+
+    def create_new_data_set(self):
+        setDataDir = '{0}/{1:%Y%m%d_%H%M}/'.format(self.user_data_dir,
+                                                  datetime.now())
+        # TODO handle data error if dir already exists
+        os.mkdir(setDataDir)
+        return setDataDir
 
 
 class MsgPopup(Popup):

@@ -4,8 +4,11 @@
     Button:
         text: 'Get New Calibration Set'
         on_release:
-            app.targetReaderScreen = 'calib' 
-            app.mode = 'calibration'
+            app.targetReaderScreen = 'calib'
+            app.writeDir = app.create_new_data_set()
+            app.rawFile = app.writeDir + 'raw.csv'
+            app.calibFile = app.writeDir + 'calib.txt'
+            app.samplesFile = app.writeDir + 'samples.csv'
             app.goto_image_menu()
     Button:
         text: 'Load Old Calibration Set'

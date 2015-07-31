@@ -13,20 +13,18 @@
     Button:
         text: 'Load Old Calibration Set'
         on_release:
-            app.calib = app.readCalibFile(app.calibFile)
-            print app.calib.M
-            print app.calib.C
-            print app.calib.R2
-            print app.calib.blank
             app.targetReaderScreen = 'sample'
-            app.goto_image_menu()
+            app.goto_get_old_calib()
 
 
 <ImageMenuScreen>:
     orientation: 'vertical'
     Button:
         text: 'Take Photo'
-        on_release: app.take_photo()
+        on_release:
+            if app.targetReaderScreen == 'calib':imageFile=app.take_photo(app.targetReaderScreen)
+            else:imageFile=app.take_photo(app.targetReaderScreen, app.sampleScreen['colorReader'].spots[0].sampleGrp)
+            app.goto_color_reader_screen(imageFile)
     Button:
         text: 'Get Stock Image'
         on_release: app.goto_get_stock_image()
@@ -68,6 +66,28 @@
         font_size: self.height * 0.7
 
 
+<CalibChooserScreen>:
+    BoxLayout:
+        id: fileChooserScreen
+        size: root.size
+        orientation: 'vertical'
+        FileChooserListView:
+            id: calibChooser
+            size_hint_y: 0.9
+            path: '.'
+        Button:
+            id: selectButton
+            size_hint_y: 0.1
+            text: 'Load'
+            on_release:
+                app.calib = app.readCalibFile(calibChooser.selection[0])
+                app.writeDir = os.path.dirname(calibChooser.selection[0]) + '/'
+                app.rawFile = app.writeDir + 'raw.csv'
+                app.calibFile = app.writeDir + 'calib.txt'
+                app.samplesFile = app.writeDir + 'samples.csv' 
+                app.goto_image_menu()
+ 
+ 
 <FileChooserScreen>:
     BoxLayout:
         id: fileChooserScreen
@@ -82,9 +102,6 @@
             size_hint_y: 0.1
             text: 'Load'
             on_release:
-                print "PATHS-"
-                print os.getcwd()
-                print app.get_running_app().user_data_dir
                 app.goto_color_reader_screen(fileChooser.selection[0])
  
  

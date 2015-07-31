@@ -11,29 +11,44 @@ import smtplib
 import base64
 import urllib
 import urllib2
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+from os.path import basename
 import json
 from argparse import ArgumentParser
 import sys
 import traceback
 from kivy.network.urlrequest import UrlRequest
 
-user = 'offshoreweather@gmail.com'
+user = 'spot.analyser.test@gmail.com'
+#user = 'offshoreweather@gmail.com'
 
-clientId = '902727965852-h2ttc6d70bhmfkdq8j5evb4vdcdv1chb.apps.googleusercontent.com'
-clientSecret = 'KOZjCM4qfsWU3sal1sqtaNn4'
-refreshToken = '1/DfnejMkhBlnERt8wphh247oBE8CM8YfwtNp6DJWGXmAMEudVrK5jSpoR30zcRFq6'
+clientId = '295062602032-6r0oveu3e3mnar9k42rh7en2pbtfpdsg.apps.googleusercontent.com'
+#clientId = '902727965852-h2ttc6d70bhmfkdq8j5evb4vdcdv1chb.apps.googleusercontent.com'
+clientSecret = 'y56y3ZvHvgbYERdVjA3M2_gm'
+#clientSecret = 'KOZjCM4qfsWU3sal1sqtaNn4'
+refreshToken = '1/UFaIEi9-wOzhbCBwROlCtXlVOS98-hxQJNOd9HKTGg4'
+#refreshToken = '1/DfnejMkhBlnERt8wphh247oBE8CM8YfwtNp6DJWGXmAMEudVrK5jSpoR30zcRFq6'
 
 
-def sendMail(toList, subject, message):
+def sendMail(toList, subject, message, attachments=None):
     '''toList is a list of email address strings. subject and message are strings'''
     try:
         token = RefreshToken(clientId, clientSecret, refreshToken)
         print token 
-        msg = MIMEText(message)
+        msg = MIMEMultipart(message)
         msg['Subject'] = subject
         msg['From'] = user
         msg['To'] = ', '.join(toList)
+        msg.attach(MIMEText(message))
+        for attachment in attachments:
+            with open(attachment, 'rb') as f:
+                part = MIMEApplication(f.read())
+                part.add_header('Content-Disposition',
+                                'attachment; filename="{}"'.format(basename(attachment)))
+            msg.attach(part)
+
         con = smtplib.SMTP('smtp.gmail.com', 587)
 
         con.set_debuglevel(True)
@@ -46,10 +61,10 @@ def sendMail(toList, subject, message):
     except:
         print traceback.format_exc()
     finally:
-        print '!!!!!!!!!!!!!!!!!!!!!'
-        print 'XXXXXXXXXXXXXXXXXXXX'
-        #con.close()
-        print traceback.format_exc()
+        try:
+            con.close()
+        except UnboundLocalError:
+            pass
 
 
 def RefreshToken(client_id, client_secret, refresh_token):
@@ -77,18 +92,13 @@ def RefreshToken(client_id, client_secret, refresh_token):
     print request_url
     print urllib.urlencode(params)
     try:
-        print 'xx'
         urllib.urlopen(request_url, urllib.urlencode(params))
-        print 'yy'
     except:
         print traceback.format_exc()
-    #response = UrlRequest(request_url, req_body=urllib.urlencode(params))
     response = urllib2.urlopen(request_url, urllib.urlencode(params)).read()
-    #import ipdb;ipdb.set_trace()
     return json.loads(response)['access_token']
 
-def got_weather(req, results):
-    print results
+
 def main(argv):
     parser = ArgumentParser()
     parser.add_argument('-t', '--to_addresses', nargs='+', help='Email addresses to send to')

@@ -46,6 +46,10 @@ class FileChooserScreen(Widget):
     pass
 
 
+class CalibChooserScreen(Widget):
+    pass
+
+
 class Main(App):
     measuredChannel = StringProperty('red')
     targetReaderScreen = StringProperty('')
@@ -61,11 +65,18 @@ class Main(App):
         self.calibrationScreen = CalibrationScreen()
         self.sampleScreen = SampleScreen()
         self.fileChooserScreen = FileChooserScreen()
+        self.calibChooserScreen = CalibChooserScreen()
+
         self.initializeCalibSpots()
         self.initializeSampleSpots()
         self.firstSample = True
         return self.mainMenuScreen
     
+
+    def goto_main_menu(self):
+        self.clearAllWidgets()
+        Window.add_widget(self.mainMenuScreen)
+
 
     def goto_image_menu(self):
         print 'self.directory', self.directory
@@ -80,6 +91,14 @@ class Main(App):
             os.getcwd() + '/stock_images'
         self.clearAllWidgets()
         Window.add_widget(self.fileChooserScreen)
+
+
+    def goto_get_old_calib(self):
+        self.calibChooserScreen.ids['calibChooser'].path =\
+            self.user_data_dir
+        print self.calibChooserScreen.ids['calibChooser'].path
+        self.clearAllWidgets()
+        Window.add_widget(self.calibChooserScreen)
 
 
     def goto_color_reader_screen(self, imageFile):
@@ -117,7 +136,7 @@ class Main(App):
         else:
             self.graphScreen.ids['graph'].updateGraph(
                     [spot.conc for spot in colorReader.spots],
-                    [spot.colorVal for spot in colorReader.spots] )
+                    [spot.colorVal for spot in colorReader.spots])
         self.clearAllWidgets()
         Window.add_widget(self.graphScreen)
 
@@ -197,7 +216,10 @@ class Main(App):
  
 
     def sendEmail(self):
-        sendMail(['alistair.mckelvie@gmail.com'], 'test', 'test')
+        sendMail(['alistair.mckelvie@gmail.com'],
+                 'Spot analyser files from {}'.format(self.writeDir.split('/')[-2].split('\\')[-1]),
+                 'Spot analyser files from {}'.format(self.writeDir.split('/')[-2].split('\\')[-1]),
+                 [self.samplesFile, self.rawFile, self.calibFile])
     
 
     def clearAllWidgets(self):
@@ -205,16 +227,20 @@ class Main(App):
             Window.remove_widget(widget)
 
 
-    def take_photo(self):
+    def take_photo(self, fileType, sampleGrp=None):
+        assert fileType == 'calib' or fileType == 'sample'
+        if fileType = 'calib':
+            filepath = self.writeDir + 'calib.jpg'
+        else:
+            filepath = self.writeDir + 'sample_{}.jpg'.format(sampleGrp)
         try:
-            filepath = self.user_data_dir + '/test.jpg'
-            fp=filepath
             camera.take_picture(filename=filepath, 
                                 on_complete=self.camera_callback())
         except NotImplementedError:
             popup = MsgPopup(msg="This feature has not yet been "
                                  "implemented for this platform.")
             popup.open()
+        return filepath
 
 
     def camera_callback(self):
@@ -302,7 +328,7 @@ class Main(App):
             blank = f.next().split()[1]
             measuredChannel = f.next().split()[1]
         Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'blank', 'channel'])
-        return Calib(M=M, C=C, R2=R2, blank=blank, measuredChannel=measuredChannel)
+        return Calib(M=M, C=C, R2=R2, blank=blank, channel=measuredChannel)
 
 
     def calculateACalibCurve(self, spots):

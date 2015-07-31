@@ -188,15 +188,6 @@
         Label:
             text: 'Spot size'
             size_hint_y: 0.3
-        TextInput:
-            id: sampleValText
-            text: '-'
-            font_size: self.height * 0.8
-            on_text:
-                readerScreen.updateConcText()
-        Label:
-            text: 'Std Conc'
-            size_hint_y: 0.3
         Button:
             text: 'Save values and \nget new image'
             on_release:
@@ -205,6 +196,11 @@
                 app.firstSample = False
                 app.clearSampleSpots()
                 app.goto_image_menu()
+        Button:
+            text: 'Save values and \nsend email'
+            on_release:
+                app.sendEmail()
+                app.goto_main_menu()
         RelativeLayout:
             cols: 3
             row: 3

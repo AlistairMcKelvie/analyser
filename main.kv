@@ -24,7 +24,6 @@
         on_release:
             if app.targetReaderScreen == 'calib':imageFile=app.take_photo(app.targetReaderScreen)
             else:imageFile=app.take_photo(app.targetReaderScreen, app.sampleScreen['colorReader'].spots[0].sampleGrp)
-            app.goto_color_reader_screen(imageFile)
     Button:
         text: 'Get Stock Image'
         on_release: app.goto_get_stock_image()

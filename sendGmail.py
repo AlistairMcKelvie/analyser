@@ -14,7 +14,7 @@ import urllib2
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
-from os.path import basename
+from os import listdir
 import json
 from argparse import ArgumentParser
 import sys
@@ -32,7 +32,7 @@ refreshToken = '1/UFaIEi9-wOzhbCBwROlCtXlVOS98-hxQJNOd9HKTGg4'
 #refreshToken = '1/DfnejMkhBlnERt8wphh247oBE8CM8YfwtNp6DJWGXmAMEudVrK5jSpoR30zcRFq6'
 
 
-def sendMail(toList, subject, message, attachments=None):
+def sendMail(toList, subject, message, attachmentDir):
     '''toList is a list of email address strings. subject and message are strings'''
     try:
         token = RefreshToken(clientId, clientSecret, refreshToken)
@@ -42,11 +42,11 @@ def sendMail(toList, subject, message, attachments=None):
         msg['From'] = user
         msg['To'] = ', '.join(toList)
         msg.attach(MIMEText(message))
-        for attachment in attachments:
-            with open(attachment, 'rb') as f:
+        for attachment in listdir(attachmentDir):
+            with open(attachmentDir + attachment, 'rb') as f:
                 part = MIMEApplication(f.read())
                 part.add_header('Content-Disposition',
-                                'attachment; filename="{}"'.format(basename(attachment)))
+                                'attachment; filename="{}"'.format(attachment))
             msg.attach(part)
 
         con = smtplib.SMTP('smtp.gmail.com', 587)

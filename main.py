@@ -70,6 +70,7 @@ class Main(App):
         self.initializeCalibSpots()
         self.initializeSampleSpots()
         self.firstSample = True
+        self.pausedForPhoto = False
         return self.mainMenuScreen
     
 
@@ -102,6 +103,7 @@ class Main(App):
 
 
     def goto_color_reader_screen(self, imageFile):
+        print 'in color reader'
         assert '.jpg' in imageFile or '.png' in imageFile,\
             imageFile + ' not a valid image file, must be jpg or png'
         assert (self.targetReaderScreen == 'calib' or
@@ -219,7 +221,7 @@ class Main(App):
         sendMail(['alistair.mckelvie@gmail.com'],
                  'Spot analyser files from {}'.format(self.writeDir.split('/')[-2].split('\\')[-1]),
                  'Spot analyser files from {}'.format(self.writeDir.split('/')[-2].split('\\')[-1]),
-                 [self.samplesFile, self.rawFile, self.calibFile])
+                 self.writeDir)
     
 
     def clearAllWidgets(self):
@@ -229,22 +231,29 @@ class Main(App):
 
     def take_photo(self, fileType, sampleGrp=None):
         assert fileType == 'calib' or fileType == 'sample'
-        if fileType = 'calib':
+        if fileType == 'calib':
             filepath = self.writeDir + 'calib.jpg'
         else:
+            t
             filepath = self.writeDir + 'sample_{}.jpg'.format(sampleGrp)
+        self.cameraFile = filepath
         try:
-            camera.take_picture(filename=filepath, 
-                                on_complete=self.camera_callback())
+            print 'taking picture'
+            camera.take_picture(filepath, self.camera_callback)
         except NotImplementedError:
             popup = MsgPopup(msg="This feature has not yet been "
                                  "implemented for this platform.")
             popup.open()
-        return filepath
+
+    def camera_callback(self, imageFile):
+        print 'imagefile:', imageFile
+        print 'got camera callback'
+        self.goto_color_reader_screen(imageFile)
 
 
-    def camera_callback(self):
-        print 'got to camera callback'
+    def on_pause(self):
+        print 'pausing'
+        return True
 
 
     def writeRawData(self, calib, rawFile, spots, firstWrite=False):

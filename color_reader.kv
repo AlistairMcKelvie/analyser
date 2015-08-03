@@ -1,5 +1,10 @@
 <CalibrationScreen>:
     id: readerScreen
+    canvas:
+        Rectangle:
+            texture: self.tex
+            size: (root.width * 0.8, root.height * 0.85)
+            pos: (root.width * 0.2, root.width * 0.15)
     ColorReader:
         id: colorReader
         spotCount: app.spotCount
@@ -13,6 +18,9 @@
         width: root.width * 0.2
         height: root.height * 0.85
         orientation: 'vertical'
+        Button:
+            text: 'send email'
+            on_release: app.sendEmail()
         Button:
             text: 'Use this calibration'
             on_release:
@@ -107,6 +115,8 @@
                 on_press: colorReader.startMoveBox(1, 0)
                 on_release: colorReader.stopMoveBox()
     BoxLayout:
+        width: root.width * 0.95
+        x: root.width * 0.05
         width: root.width
         y: root.height * 0.1
         height: root.height * 0.05
@@ -127,6 +137,8 @@
             text: colorReader.spotButtonText[4]
             on_press: colorReader.currentSpot = colorReader.spots[4]
     BoxLayout:
+        width: root.width * 0.95
+        x: root.width * 0.05
         width: root.width
         y: root.height * 0.05
         height: root.height * 0.05
@@ -146,6 +158,8 @@
             text: colorReader.spotButtonText[9]
             on_press: colorReader.currentSpot = colorReader.spots[9]
     BoxLayout:
+        width: root.width * 0.95
+        x: root.width * 0.05
         width: root.width
         y: 0
         height: root.height * 0.05
@@ -261,7 +275,6 @@
                 on_press: colorReader.startMoveBox(1, 0)
                 on_release: colorReader.stopMoveBox()
     BoxLayout:
-        width: root.width
         y: root.height * 0.1
         height: root.height * 0.05
         ColorReaderToggleButton:

@@ -2,6 +2,7 @@ import kivy
 
 from kivy.app import App
 from kivy.core.window import Window
+from kivy.core.image import Image
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
@@ -55,6 +56,7 @@ class Main(App):
     targetReaderScreen = StringProperty('')
     stdsFile = StringProperty('')
     calibFile = StringProperty('')
+    calibCalcLog = StringProperty('')
 
     def build(self):
         '''Runs when app starts'''
@@ -70,7 +72,6 @@ class Main(App):
         self.initializeCalibSpots()
         self.initializeSampleSpots()
         self.firstSample = True
-        self.pausedForPhoto = False
         return self.mainMenuScreen
     
 
@@ -115,20 +116,38 @@ class Main(App):
         elif self.targetReaderScreen == 'sample':
             readerScreen = self.sampleScreen
         reader = readerScreen.ids['colorReader']
+        
         self.clearAllWidgets()
         Window.add_widget(readerScreen)
+
         # color reader initialization
-        self.imageFile = imageFile
-        if imageFile is not None:
-            reader.imageFile = imageFile
-            readerScreen.canvas.before.clear()
-            with readerScreen.canvas.before:
-                Rectangle(source=self.imageFile,
-                          size=(readerScreen.width * 0.8,
-                                readerScreen.height * 0.85),
-                          pos=(readerScreen.width * 0.2,
-                               readerScreen.height * 0.15))
+        tempDir = self.create_temp_dir()
+        reader.imageFile = imageFile
+        self.calibrationScreen.tex = Image(imageFile).texture
         reader.initialDraw()
+
+    
+    def create_temp_dir(self):
+        tempDir = os.getcwd() + '/temp'
+        try:
+            os.mkdir(tempDir)
+        except Exception:
+            pass
+        return tempDir
+
+
+    def resize_image(self, imageFile, writeDir):
+        basewidth = 800
+        img = PILImage.open(imageFile)
+        print 'original image size', img.size
+        wpercent = basewidth / float(img.size[0])
+        hsize = int(float(img.size[1]) * float(wpercent))
+        img = img.resize((basewidth, hsize), PILImage.ANTIALIAS)
+        savedFile = writeDir + 'resized_' + os.path.basename(imageFile)
+        img.save(savedFile)
+        print 'resize image size', img.size
+        del img
+        return savedFile
 
 
     def goto_graph(self):
@@ -218,6 +237,7 @@ class Main(App):
  
 
     def sendEmail(self):
+        self.calibrationScreen.canvas.ask_update()
         sendMail(['alistair.mckelvie@gmail.com'],
                  'Spot analyser files from {}'.format(self.writeDir.split('/')[-2].split('\\')[-1]),
                  'Spot analyser files from {}'.format(self.writeDir.split('/')[-2].split('\\')[-1]),
@@ -230,6 +250,8 @@ class Main(App):
 
 
     def take_photo(self, fileType, sampleGrp=None):
+        print 'canvas', self.calibrationScreen.canvas.children
+        print 'canvas.before', self.calibrationScreen.canvas.before.children
         assert fileType == 'calib' or fileType == 'sample'
         if fileType == 'calib':
             filepath = self.writeDir + 'calib.jpg'
@@ -248,13 +270,23 @@ class Main(App):
     def camera_callback(self, imageFile):
         print 'imagefile:', imageFile
         print 'got camera callback'
-        self.goto_color_reader_screen(imageFile)
+        print 'writedir:', self.writeDir
+        resizedImage = self.resize_image(imageFile, self.writeDir)
+        print 'resized image', resizedImage
+        self.clearAllWidgets()
+        #self.goto_color_reader_screen(resizedImage)
+        self.fileChooserScreen.ids['fileChooser'].path = self.writeDir
+        Window.add_widget(self.fileChooserScreen)
 
 
     def on_pause(self):
         print 'pausing'
         return True
 
+
+    def on_resume(self):
+        print 'on resume called'
+   
 
     def writeRawData(self, calib, rawFile, spots, firstWrite=False):
         fieldNames = ['type', 'sample_group', 'sample_no',
@@ -340,7 +372,7 @@ class Main(App):
         return Calib(M=M, C=C, R2=R2, blank=blank, channel=measuredChannel)
 
 
-    def calculateACalibCurve(self, spots):
+    def calculateACalibCurve(self, spots, calcLog):
         calibPoints = []
         channelIndex = self.channelIndexFromName(self.measuredChannel)
         colorValSumDict = {}
@@ -421,7 +453,11 @@ class Main(App):
         setDataDir = '{0}/{1:%Y%m%d_%H%M}/'.format(self.user_data_dir,
                                                   datetime.now())
         # TODO handle data error if dir already exists
-        os.mkdir(setDataDir)
+        try:
+            os.mkdir(setDataDir)
+        except OSError:
+            setDataDir = setDataDir[:-1] + '_2/'
+            os.mkdir(setDataDir)
         return setDataDir
 
 

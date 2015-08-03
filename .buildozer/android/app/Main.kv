@@ -101,6 +101,7 @@
             size_hint_y: 0.1
             text: 'Load'
             on_release:
+                print 'filechooser selection', fileChooser.selection[0]
                 app.goto_color_reader_screen(fileChooser.selection[0])
  
  

@@ -6,7 +6,6 @@ from kivy.clock import Clock
 
 from kivy.graphics.vertex_instructions import Rectangle
 from kivy.graphics import Color
-from kivy.graphics.fbo import Fbo
 
 from kivy.properties import StringProperty,\
                             ReferenceListProperty,\
@@ -118,7 +117,7 @@ class ColorReader(Widget):
         self.analysisImage = PILImage.open(self.imageFile)
         self.analysisImage = self.analysisImage.transpose(\
             PILImage.FLIP_TOP_BOTTOM)
-        
+        print 'opening image file:', self.imageFile
         for spot in self.spots:
             if len(spot.instGrp.children) > 1:
                 assert len(spot.instGrp.children) == 3
@@ -189,10 +188,9 @@ class ColorReader(Widget):
         pos = self.currentSpot.instGrp.children[2].pos
         self.currentSpot.instGrp.children[2].pos = (pos[0] + horiz,
                                                     pos[1] + vert)
-        self.readSpot(self.analysisImage, 
-                      self.currentSpot,
-                      self.currentSpotType,
-                      self.currentSpotConc)
+        self.readSpot(self.analysisImage, self.currentSpot)
+        buttonStr = self.currentSpot.updateText()
+        self.spotButtonText[self.currentSpot.idNo - 1] = buttonStr
 
 
     def readSpot(self, image, spot):
@@ -213,6 +211,7 @@ class ColorReader(Widget):
 
 class CalibrationScreen(Widget):
     valTextWasModifiedByToggle = BooleanProperty(False)
+    tex = ObjectProperty(None, allownone=True)
 
 
     def updateConcText(self):

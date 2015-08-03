@@ -9,6 +9,7 @@
             app.rawFile = app.writeDir + 'raw.csv'
             app.calibFile = app.writeDir + 'calib.txt'
             app.samplesFile = app.writeDir + 'samples.csv'
+            app.calibCalcFile = app.writeDir + 'calculations.txt'
             app.goto_image_menu()
     Button:
         text: 'Load Old Calibration Set'
@@ -101,6 +102,7 @@
             size_hint_y: 0.1
             text: 'Load'
             on_release:
+                print 'filechooser selection', fileChooser.selection[0]
                 app.goto_color_reader_screen(fileChooser.selection[0])
  
  

@@ -38,7 +38,7 @@ class ColorReaderSpot(object):
             typeText = 'Sample {0}-{1}'.format(self.sampleGrp, self.idNo)
         else:
             typeText = self.type
-        if self.conc is not None:
+        if self.colorVal is not None:
             if self.colorMode == 'RGB':
                 print 'spot color type is RGB'
                 lStr = ('[b]{0}[/b]\nR: {1:03.0f}   G: {2:03.0f}   B: {3:03.0f}')
@@ -122,8 +122,9 @@ class ColorReader(Widget):
             if len(spot.instGrp.children) > 1:
                 assert len(spot.instGrp.children) == 3
                 spot.colorMode = self.analysisImage.mode
-                spot.type = self.currentSpotType
-                spot.conc = self.currentSpotConc
+                if spot.type is None:
+                    spot.type = self.currentSpotType
+                    spot.conc = self.currentSpotConc
                 self.readSpot(self.analysisImage, spot)
                 buttonStr = spot.updateText()
                 self.spotButtonText[spot.idNo - 1] = buttonStr
@@ -239,4 +240,11 @@ class CalibrationScreen(Widget):
 
 
 class SampleScreen(Widget):
-    pass
+    tex = ObjectProperty(None, allownone=True)
+    sampleGrp = NumericProperty(1)
+
+
+    def updateSpotGrps(self):
+        print 'sample grp is {}'.format(self.sampleGrp)
+        for spot in self.ids['colorReader'].spots:
+            spot.sampleGrp = self.sampleGrp

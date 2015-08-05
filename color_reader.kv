@@ -1,10 +1,11 @@
+#:import am analyser_math
 <CalibrationScreen>:
     id: readerScreen
     canvas:
         Rectangle:
             texture: self.tex
             size: (root.width * 0.8, root.height * 0.85)
-            pos: (root.width * 0.2, root.width * 0.15)
+            pos: (root.width * 0.2, root.height * 0.15)
     ColorReader:
         id: colorReader
         spotCount: app.spotCount
@@ -19,14 +20,12 @@
         height: root.height * 0.85
         orientation: 'vertical'
         Button:
-            text: 'send email'
-            on_release: app.sendEmail()
-        Button:
             text: 'Use this calibration'
             on_release:
-                app.calib = app.calculateACalibCurve(app.calibrationScreen.ids['colorReader'].spots)
+                app.writeSpotsToConfig()
+                app.calib = am.calculateACalibCurve(app.calibrationScreen.ids['colorReader'].spots, app.calcLog, app.measuredChannel, app.qConfCSV)
                 app.writeCalibFile(app.calibFile, app.calib)
-                app.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, firstWrite=True)
+                am.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, app.measuredChannel, firstWrite=True)
                 app.targetReaderScreen = 'sample'
                 app.goto_image_menu()
         TextInput:
@@ -115,8 +114,6 @@
                 on_press: colorReader.startMoveBox(1, 0)
                 on_release: colorReader.stopMoveBox()
     BoxLayout:
-        width: root.width * 0.95
-        x: root.width * 0.05
         width: root.width
         y: root.height * 0.1
         height: root.height * 0.05
@@ -137,8 +134,6 @@
             text: colorReader.spotButtonText[4]
             on_press: colorReader.currentSpot = colorReader.spots[4]
     BoxLayout:
-        width: root.width * 0.95
-        x: root.width * 0.05
         width: root.width
         y: root.height * 0.05
         height: root.height * 0.05
@@ -158,8 +153,6 @@
             text: colorReader.spotButtonText[9]
             on_press: colorReader.currentSpot = colorReader.spots[9]
     BoxLayout:
-        width: root.width * 0.95
-        x: root.width * 0.05
         width: root.width
         y: 0
         height: root.height * 0.05
@@ -182,6 +175,11 @@
 
 <SampleScreen>:
     id: readerScreen
+    canvas:
+        Rectangle:
+            texture: self.tex
+            size: (root.width * 0.8, root.height * 0.85)
+            pos: (root.width * 0.2, root.height * 0.15)
     ColorReader:
         id: colorReader
         spotCount: app.spotCount
@@ -196,6 +194,15 @@
         height: root.height * 0.85
         orientation: 'vertical'
         TextInput:
+            text: str(root.sampleGrp)
+            font_size: self.height * 0.8
+            on_text: 
+                root.sampleGrp = int(self.text)
+                root.updateSpotGrps()
+        Label:
+            text: 'Sample Number'
+            size_hint_y: 0.3
+        TextInput:
             text: str(colorReader.currentSpotSize)
             font_size: self.height * 0.8
             on_text: colorReader.updateSpotSize(self.text)
@@ -205,14 +212,20 @@
         Button:
             text: 'Save values and \nget new image'
             on_release:
-                app.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots)
-                app.writeSamplesFile(app.calib, app.samplesFile, app.sampleScreen.ids['colorReader'].spots, app.firstSample)
+                app.writeSpotsToConfig()
+                am.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots, app.measuredChannel)
+                am.writeSamplesFile(app.calib, app.samplesFile, app.sampleScreen.ids['colorReader'].spots, app.calcLog, app.firstSample)
                 app.firstSample = False
-                app.clearSampleSpots()
+                root.sampleGrp += 1
                 app.goto_image_menu()
         Button:
             text: 'Save values and \nsend email'
             on_release:
+                app.writeSpotsToConfig()
+                am.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots, app.measuredChannel)
+                am.writeSamplesFile(app.calib, app.samplesFile, app.sampleScreen.ids['colorReader'].spots, app.firstSample)
+                app.firstSample = False
+                app.clearSampleSpots()
                 app.sendEmail()
                 app.goto_main_menu()
         RelativeLayout:
@@ -275,6 +288,7 @@
                 on_press: colorReader.startMoveBox(1, 0)
                 on_release: colorReader.stopMoveBox()
     BoxLayout:
+        width: root.width
         y: root.height * 0.1
         height: root.height * 0.05
         ColorReaderToggleButton:

@@ -3,15 +3,24 @@
     orientation: 'vertical'
     Button:
         text: 'Get New Calibration Set'
+        text_size: self.size
+        font_size: '30sp'
+        halign: 'center'
+        valign: 'middle'
         on_release:
             app.targetReaderScreen = 'calib'
             app.writeDir = app.create_new_data_set()
             app.rawFile = app.writeDir + 'raw.csv'
             app.calibFile = app.writeDir + 'calib.txt'
             app.samplesFile = app.writeDir + 'samples.csv'
+            app.calcLog = app.writeDir + 'calc_log.txt'
             app.goto_image_menu()
     Button:
         text: 'Load Old Calibration Set'
+        text_size: self.size
+        font_size: '30sp'
+        halign: 'center'
+        valign: 'middle'
         on_release:
             app.targetReaderScreen = 'sample'
             app.goto_get_old_calib()
@@ -21,11 +30,19 @@
     orientation: 'vertical'
     Button:
         text: 'Take Photo'
+        text_size: self.size
+        font_size: '30sp'
+        halign: 'center'
+        valign: 'middle'
         on_release:
             if app.targetReaderScreen == 'calib':imageFile=app.take_photo(app.targetReaderScreen)
-            else:imageFile=app.take_photo(app.targetReaderScreen, app.sampleScreen['colorReader'].spots[0].sampleGrp)
+            else:imageFile=app.take_photo(app.targetReaderScreen, app.sampleScreen.ids['colorReader'].spots[0].sampleGrp)
     Button:
         text: 'Get Stock Image'
+        text_size: self.size
+        font_size: '30sp'
+        halign: 'center'
+        valign: 'middle'
         on_release: app.goto_get_stock_image()
 
 
@@ -40,6 +57,8 @@
             size_hint_y: None
             height: root.height * 0.25
             text: 'Go to analyser'
+            text_size: self.size
+            font_size: '20sp'
             on_release:
                 app.goto_calibration_screen()
                 print R2.x

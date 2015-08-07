@@ -25,7 +25,7 @@ class CalcLogger(object):
 
 
 def calculateConc(calib, colorVal):
-    A = math.log10(colorVal) / calib.blank
+    A = -math.log10(colorVal / calib.blank)
     result = (A - calib.C) / calib.M
     return result
 
@@ -42,7 +42,7 @@ def readQConf(N, conf, qConfCSV):
 
 
 def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
-    log = CalcLogger('print', calcLog).log
+    log = CalcLogger('log', calcLog).log
     channelIndex = channelIndexFromName(measuredChannel)
     colorValAverageDict = {}
     concSet = set()
@@ -224,7 +224,8 @@ def percentile(percentileNo, data):
 
 
 def writeSamplesFile(calib, samplesFile, spots, calcLog, firstWrite=False):
-    log = CalcLogger('print', calcLog).log
+    log = CalcLogger('log', calcLog).log
+    log('-----------------------------------------------------')
     colorIndex = channelIndexFromName(calib.channel)
     fieldNames = ['sample_group', 'calculated_concentration']
     if firstWrite:

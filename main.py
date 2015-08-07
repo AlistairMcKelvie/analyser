@@ -72,9 +72,18 @@ class Main(App):
         self.initializeCalibSpots()
         self.initializeSampleSpots()
         self.firstSample = True
-        self.qConfCSV = os.getcwd() + '/Q_Crit_Vals.csv'
+        self.qConfCSV = 'Q_Crit_Vals.csv'
+        print 'listing dir'
+        self.listall(os.getcwd())
         return self.mainMenuScreen
     
+    def listall(self, dir):
+        for x in os.listdir(dir):
+            if os.path.isfile(dir + '/' + x):
+                print dir + '/' + x
+            elif os.path.isdir(dir + '/' + x):
+                self.listall(dir + '/' + x)
+
 
     def goto_main_menu(self):
         self.clearAllWidgets()
@@ -143,7 +152,7 @@ class Main(App):
         print 'original image size', img.size
         wpercent = basewidth / float(img.size[0])
         hsize = int(float(img.size[1]) * float(wpercent))
-        img = img.resize((basewidth, hsize), PILImage.ANTIALIAS)
+        img = img.resize((basewidth, hsize))
         savedFile = writeDir + 'resized_' + os.path.basename(imageFile)
         img.save(savedFile)
         print 'resize image size', img.size
@@ -254,12 +263,13 @@ class Main(App):
         print 'canvas', self.calibrationScreen.canvas.children
         print 'canvas.before', self.calibrationScreen.canvas.before.children
         assert fileType == 'calib' or fileType == 'sample'
+        print 'fileType', fileType
         if fileType == 'calib':
             filepath = self.writeDir + 'calib.jpg'
         else:
-            t
             filepath = self.writeDir + 'sample_{}.jpg'.format(sampleGrp)
         self.cameraFile = filepath
+        print 'c filePath', filepath
         try:
             print 'taking picture'
             camera.take_picture(filepath, self.camera_callback)

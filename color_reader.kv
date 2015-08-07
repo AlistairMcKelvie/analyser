@@ -20,7 +20,11 @@
         height: root.height * 0.85
         orientation: 'vertical'
         Button:
-            text: 'Use this calibration'
+            text: 'Use this \ncalibration'
+            text_size: self.size
+            font_size: '15sp'
+            halign: 'center'
+            valign: 'middle'
             on_release:
                 app.writeSpotsToConfig()
                 app.calib = am.calculateACalibCurve(app.calibrationScreen.ids['colorReader'].spots, app.calcLog, app.measuredChannel, app.qConfCSV)
@@ -66,7 +70,7 @@
                 height: self.parent.height * 0.33333
                 text: 'Up'
                 text_size: self.size
-                font_size: self.height * 0.7
+                font_size: self.width * 0.3
                 halign: 'center'
                 valign: 'middle'
                 on_press: colorReader.startMoveBox(0, 1)
@@ -80,7 +84,7 @@
                 height: self.parent.height * 0.33333
                 text: 'Down'
                 text_size: self.size
-                font_size: self.height * 0.7
+                font_size: self.width * 0.3
                 halign: 'center'
                 valign: 'middle'
                 on_press: colorReader.startMoveBox(0, -1)
@@ -94,7 +98,7 @@
                 height: self.parent.height * 0.33333
                 text: 'Left'
                 text_size: self.size
-                font_size: self.height * 0.7
+                font_size: self.width * 0.3
                 halign: 'center'
                 valign: 'middle'
                 on_press: colorReader.startMoveBox(-1, 0)
@@ -108,7 +112,7 @@
                 height: self.parent.height * 0.33333
                 text: 'Right'
                 text_size: self.size
-                font_size: self.height * 0.7
+                font_size: self.width * 0.3
                 halign: 'center'
                 valign: 'middle'
                 on_press: colorReader.startMoveBox(1, 0)
@@ -210,7 +214,10 @@
             text: 'Spot size'
             size_hint_y: 0.3
         Button:
-            text: 'Save values and \nget new image'
+            text: 'Get new image'
+            font_size: '15sp'
+            halign: 'center'
+            valign: 'middle'
             on_release:
                 app.writeSpotsToConfig()
                 am.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots, app.measuredChannel)
@@ -219,13 +226,16 @@
                 root.sampleGrp += 1
                 app.goto_image_menu()
         Button:
-            text: 'Save values and \nsend email'
+            text: 'Send email'
+            font_size: '15sp'
+            halign: 'center'
+            valign: 'middle'
             on_release:
                 app.writeSpotsToConfig()
                 am.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots, app.measuredChannel)
-                am.writeSamplesFile(app.calib, app.samplesFile, app.sampleScreen.ids['colorReader'].spots, app.firstSample)
+                am.writeSamplesFile(app.calib, app.samplesFile, app.sampleScreen.ids['colorReader'].spots, app.calcLog, app.firstSample)
                 app.firstSample = False
-                app.clearSampleSpots()
+                root.sampleGrp += 1
                 app.sendEmail()
                 app.goto_main_menu()
         RelativeLayout:
@@ -240,7 +250,7 @@
                 height: self.parent.height * 0.33333
                 text: 'Up'
                 text_size: self.size
-                font_size: self.height * 0.7
+                font_size: self.width * 0.3
                 halign: 'center'
                 valign: 'middle'
                 on_press: colorReader.startMoveBox(0, 1)
@@ -254,7 +264,7 @@
                 height: self.parent.height * 0.33333
                 text: 'Down'
                 text_size: self.size
-                font_size: self.height * 0.7
+                font_size: self.width * 0.3
                 halign: 'center'
                 valign: 'middle'
                 on_press: colorReader.startMoveBox(0, -1)
@@ -268,7 +278,7 @@
                 height: self.parent.height * 0.33333
                 text: 'Left'
                 text_size: self.size
-                font_size: self.height * 0.7
+                font_size: self.width * 0.3
                 halign: 'center'
                 valign: 'middle'
                 on_press: colorReader.startMoveBox(-1, 0)
@@ -282,7 +292,7 @@
                 height: self.parent.height * 0.33333
                 text: 'Right'
                 text_size: self.size
-                font_size: self.height * 0.7
+                font_size: self.width * 0.3
                 halign: 'center'
                 valign: 'middle'
                 on_press: colorReader.startMoveBox(1, 0)

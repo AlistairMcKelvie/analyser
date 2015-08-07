@@ -285,9 +285,12 @@ class Main(App):
         print 'writedir:', self.writeDir
         resizedImage = self.resize_image(imageFile, self.writeDir)
         print 'resized image', resizedImage
+        with open(resizedImage, 'rb'):
+            print 'test opening {}.'.format(resizedImage)
         self.clearAllWidgets()
         #self.goto_color_reader_screen(resizedImage)
         self.fileChooserScreen.ids['fileChooser'].path = self.writeDir
+        self.fileChooserScreen.ids['fileChooser'].update()
         Window.add_widget(self.fileChooserScreen)
 
 

@@ -12,15 +12,13 @@ from kivy.graphics import Color
 from kivy.properties import StringProperty
 from kivy.lang import Builder
 from kivy import platform
+from kivy.clock import Clock
 from plyer import camera
 
 from PIL import Image as PILImage
 
 import os
-import os.path
 import csv
-import math
-from collections import namedtuple
 
 from myGraph import MyGraph
 from color_reader import ColorReaderSpot,\
@@ -50,7 +48,7 @@ class CalibChooserScreen(Widget):
     pass
 
 
-class Main(App):
+class AnalyserApp(App):
     measuredChannel = StringProperty('red')
     targetReaderScreen = StringProperty('')
     stdsFile = StringProperty('')
@@ -73,17 +71,8 @@ class Main(App):
         self.initializeSampleSpots()
         self.firstSample = True
         self.qConfCSV = 'Q_Crit_Vals.csv'
-        print 'listing dir'
-        self.listall(os.getcwd())
         return self.mainMenuScreen
     
-    def listall(self, dir):
-        for x in os.listdir(dir):
-            if os.path.isfile(dir + '/' + x):
-                print dir + '/' + x
-            elif os.path.isdir(dir + '/' + x):
-                self.listall(dir + '/' + x)
-
 
     def goto_main_menu(self):
         self.clearAllWidgets()
@@ -91,9 +80,6 @@ class Main(App):
 
 
     def goto_image_menu(self):
-        print 'self.directory', self.directory
-        print 'self.user_data_dir', self.user_data_dir
-        print 'os.getcwd', os.getcwd()
         self.clearAllWidgets()
         Window.add_widget(self.imageMenuScreen)
 
@@ -127,39 +113,14 @@ class Main(App):
             readerScreen = self.sampleScreen
         reader = readerScreen.ids['colorReader']
         
+        # color reader initialization
+        reader.imageFile = imageFile
+        reader.initialDraw()
+        readerScreen.tex = Image(imageFile).texture
         self.clearAllWidgets()
         Window.add_widget(readerScreen)
 
-        # color reader initialization
-        tempDir = self.create_temp_dir()
-        reader.imageFile = imageFile
-        readerScreen.tex = Image(imageFile).texture
-        reader.initialDraw()
-
     
-    def create_temp_dir(self):
-        tempDir = os.getcwd() + '/temp'
-        try:
-            os.mkdir(tempDir)
-        except Exception:
-            pass
-        return tempDir
-
-
-    def resize_image(self, imageFile, writeDir):
-        basewidth = 800
-        img = PILImage.open(imageFile)
-        print 'original image size', img.size
-        wpercent = basewidth / float(img.size[0])
-        hsize = int(float(img.size[1]) * float(wpercent))
-        img = img.resize((basewidth, hsize))
-        savedFile = writeDir + 'resized_' + os.path.basename(imageFile)
-        img.save(savedFile)
-        print 'resize image size', img.size
-        del img
-        return savedFile
-
-
     def goto_graph(self):
         colorReader = self.colorReaderScreen.ids['colorReader']
         if [i.type for i in colorReader.spots].count('Blank') == 0:
@@ -260,8 +221,6 @@ class Main(App):
 
 
     def take_photo(self, fileType, sampleGrp=None):
-        print 'canvas', self.calibrationScreen.canvas.children
-        print 'canvas.before', self.calibrationScreen.canvas.before.children
         assert fileType == 'calib' or fileType == 'sample'
         print 'fileType', fileType
         if fileType == 'calib':
@@ -269,9 +228,10 @@ class Main(App):
         else:
             filepath = self.writeDir + 'sample_{}.jpg'.format(sampleGrp)
         self.cameraFile = filepath
-        print 'c filePath', filepath
+        print 'filePath', filepath
         try:
             print 'taking picture'
+            self.takenPhoto = filepath
             camera.take_picture(filepath, self.camera_callback)
         except NotImplementedError:
             popup = MsgPopup(msg="This feature has not yet been "
@@ -279,29 +239,21 @@ class Main(App):
             popup.open()
 
 
-    def camera_callback(self, imageFile):
-        print 'imagefile:', imageFile
+    def camera_callback(self, imageFile, **kwargs):
         print 'got camera callback'
-        print 'writedir:', self.writeDir
-        resizedImage = self.resize_image(imageFile, self.writeDir)
-        print 'resized image', resizedImage
-        with open(resizedImage, 'rb'):
-            print 'test opening {}.'.format(resizedImage)
-        self.clearAllWidgets()
-        #self.goto_color_reader_screen(resizedImage)
-        self.fileChooserScreen.ids['fileChooser'].path = self.writeDir
-        self.fileChooserScreen.ids['fileChooser'].update()
-        Window.add_widget(self.fileChooserScreen)
+        PILImage.open(imageFile).resize((800,600)).save(imageFile)
+        Clock.schedule_once(self.new_photo_callback, 0.3)
+        return False
+
+    def new_photo_callback(self, dt):
+        self.goto_color_reader_screen(self.cameraFile)
 
 
     def on_pause(self):
-        print 'pausing'
         return True
 
-
     def on_resume(self):
-        print 'on resume called'
-   
+        pass 
 
     def writeCalibFile(self, calibFile, calib):
         with open(calibFile, 'wb') as f:
@@ -338,10 +290,9 @@ class Main(App):
 class MsgPopup(Popup):
     def __init__(self, msg):
         super(MsgPopup, self).__init__()
-
         self.ids.message_label.text = msg
 
 
 if __name__ == '__main__':
-    Main().run()
+    AnalyserApp().run()
 

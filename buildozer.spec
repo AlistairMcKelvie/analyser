@@ -7,7 +7,7 @@ title = Analyser
 package.name = an1
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = org.test
+package.domain = org.antest
 
 # (str) Source code where the main.py live
 source.dir = .
@@ -56,7 +56,7 @@ fullscreen = 0
 #
 
 # (list) Permissions
-android.permissions = INTERNET
+android.permissions = CAMERA,INTERNET
 
 # (int) Android API to use
 #android.api = 14

@@ -3,9 +3,10 @@ import kivy
 from kivy.uix.widget import Widget
 
 from kivy.clock import Clock
-
+import os
 from kivy.graphics.vertex_instructions import Rectangle
 from kivy.graphics import Color
+from kivy.core.image import Image
 
 from kivy.properties import StringProperty,\
                             ReferenceListProperty,\
@@ -19,7 +20,7 @@ from PIL import Image as PILImage
 from PIL.ImageStat import Stat as imageStat
 
 class ColorReaderSpot(object):
-    def __init__(self, idNo = None, type='Blank', conc=0):
+    def __init__(self, idNo = None, type='Std', conc=0.0):
         self.idNo = idNo
         self.sampleGrp = None
         self.type = type
@@ -66,9 +67,9 @@ class ColorReader(Widget):
     imageFile = StringProperty('')
     spotCount = NumericProperty(15)
     currentSpot = ObjectProperty(None)
-    currentSpotType = StringProperty('Blank')
+    currentSpotType = StringProperty('Std')
     currentSpotSize = NumericProperty(15)
-    currentSpotConc = ObjectProperty(0)
+    currentSpotConc = NumericProperty(0.0)
     
     text1 = StringProperty('1')
     text2 = StringProperty('2')
@@ -114,6 +115,9 @@ class ColorReader(Widget):
         
 
     def initialDraw(self):
+        print 'in initial draw'
+        print 'image file is ', self.imageFile
+        print 'in dir', os.listdir(os.path.dirname(self.imageFile))
         self.analysisImage = PILImage.open(self.imageFile)
         self.analysisImage = self.analysisImage.transpose(\
             PILImage.FLIP_TOP_BOTTOM)
@@ -127,7 +131,7 @@ class ColorReader(Widget):
                     spot.conc = self.currentSpotConc
                 self.readSpot(self.analysisImage, spot)
                 buttonStr = spot.updateText()
-                self.spotButtonText[spot.idNo - 1] = buttonStr
+                self.spotButtonText[spot.idNo - 1] = buttonStr 
 
  
     def updateSpotSize(self, spotSize):
@@ -139,6 +143,7 @@ class ColorReader(Widget):
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
+            self.parent.tex = Image(self.imageFile).texture
             print 'called on_touch_down'
             self.currentSpot.instGrp.clear()
             size = self.currentSpotSize
@@ -211,32 +216,7 @@ class ColorReader(Widget):
  
 
 class CalibrationScreen(Widget):
-    valTextWasModifiedByToggle = BooleanProperty(False)
     tex = ObjectProperty(None, allownone=True)
-
-
-    def updateConcText(self):
-        print 'on text was called'
-        print self.valTextWasModifiedByToggle
-        currentSpot = self.ids['colorReader'].currentSpot
-        if not self.valTextWasModifiedByToggle:
-            print 'toggle state updated'
-            text = self.ids['sampleValText'].text
-            if text == '':
-                self.ids['sampleValText'].text = 0
-            print text
-            try:
-                self.ids['colorReader'].currentSpot.conc = float(text)
-                self.ids['colorReader'].currentSpotConc = float(text)
-                print self.ids['colorReader'].currentSpotConc
-                self.ids['blankToggle'].state = 'normal'
-                self.ids['blankToggle'].background = 'normal'
-                self.ids['colorReader'].currentSpotType = 'Std'
-            except ValueError:
-                print 'excepting'
-                self.ids['sampleValText'].text = '-'
-        else:
-            self.valTextWasModifiedByToggle = False
 
 
 class SampleScreen(Widget):

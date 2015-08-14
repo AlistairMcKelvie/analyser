@@ -41,23 +41,12 @@
             size_hint_y: 0.3
         TextInput:
             id: sampleValText
-            text: '-'
+            text: str(colorReader.currentSpotConc)
             font_size: self.height * 0.8
-            on_text:
-                readerScreen.updateConcText()
+            on_text: colorReader.currentSpotConc = float(self.text)
         Label:
             text: 'Std Conc'
             size_hint_y: 0.3
-        ToggleButton:
-            id: blankToggle
-            text: 'Blank'
-            state: 'down'
-            on_release:
-                colorReader.currentSpotType = 'Blank'
-                colorReader.currentSpotConc = 0
-                if self.state == 'down':\ 
-                readerScreen.valTextWasModifiedByToggle = True
-                sampleValText.text = '-'
         RelativeLayout:
             cols: 3
             row: 3
@@ -355,4 +344,14 @@
         ColorReaderToggleButton:
             text: colorReader.spotButtonText[14]
             on_press: colorReader.currentSpot = colorReader.spots[14]
+
+
+<ColorReaderToggleButton@ToggleButton>:
+    group: 'select'
+    allow_no_currentSpot: False
+    font_size: self.height * 0.35
+    halign: 'center'
+    valign: 'middle'
+    markup: True
+
 

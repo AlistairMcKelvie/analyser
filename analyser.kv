@@ -35,8 +35,8 @@
         halign: 'center'
         valign: 'middle'
         on_release:
-            if app.targetReaderScreen == 'calib':imageFile=app.take_photo(app.targetReaderScreen)
-            else:imageFile=app.take_photo(app.targetReaderScreen, app.sampleScreen.ids['colorReader'].spots[0].sampleGrp)
+            if app.targetReaderScreen == 'calib':app.take_photo(app.targetReaderScreen)
+            else:app.take_photo(app.targetReaderScreen, app.sampleScreen.ids['colorReader'].spots[0].sampleGrp)
     Button:
         text: 'Get Stock Image'
         text_size: self.size
@@ -124,15 +124,6 @@
                 app.goto_color_reader_screen(fileChooser.selection[0])
  
  
-<ColorReaderToggleButton@ToggleButton>:
-    group: 'select'
-    allow_no_currentSpot: False
-    font_size: self.height * 0.35
-    halign: 'center'
-    valign: 'middle'
-    markup: True
-
-
 <MsgPopup>:
     size_hint: 0.7, 0.4
     title: "Attention"    

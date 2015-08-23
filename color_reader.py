@@ -21,7 +21,7 @@ from PIL import Image as PILImage
 from PIL.ImageStat import Stat as imageStat
 
 class ColorReaderSpot(object):
-    def __init__(self, idNo = None, type='Std', conc=0.0):
+    def __init__(self, idNo = None, type='std', conc=0.0):
         self.idNo = idNo
         self.sampleGrp = None
         self.type = type
@@ -36,12 +36,11 @@ class ColorReaderSpot(object):
 
 
     def updateText(self):
-        if self.type == 'Std' and self.conc is not None:
+        assert self.type in ['std', 'sample']
+        if self.type == 'std' and self.conc is not None:
             typeText = 'Std ' + str(self.conc)
-        elif self.type == 'Sample':
+        elif self.type == 'sample':
             typeText = 'Sample {0}-{1}'.format(self.sampleGrp, self.idNo)
-        else:
-            typeText = self.type
         if self.colorVal is not None:
             if self.colorMode == 'RGB':
                 print 'spot color type is RGB'
@@ -87,7 +86,7 @@ class ColorReader(Widget):
     imageFile = StringProperty('')
     spotCount = NumericProperty(15)
     currentSpot = ObjectProperty(None)
-    currentSpotType = StringProperty('Std')
+    currentSpotType = StringProperty('std')
     currentSpotSize = NumericProperty(15)
     currentSpotConc = NumericProperty(0.0)
     
@@ -182,6 +181,7 @@ class ColorReader(Widget):
             self.currentSpot.addBlankSpots()
             self.readSpot(self.analysisImage, self.currentSpot)
             self.readSpot(self.analysisImage, self.currentSpot)
+            self.readBlankSpots(self.analysisImage, self.currentSpot)
             buttonStr = self.currentSpot.updateText()
             self.spotButtonText[self.currentSpot.idNo - 1] = buttonStr
 

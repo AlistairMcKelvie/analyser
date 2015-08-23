@@ -196,13 +196,13 @@ def writeRawData(calib, rawFile, spots, measuredChannel, firstWrite=False):
     with open(rawFile, 'ab') as sFile:
         csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
         for spot in spots:
-            if spot.type == 'Std':
+            if spot.type == 'std':
                 type = 'Standard'
                 conc = spot.conc
                 sample_group = ''
                 sample_no = ''
-            elif spot.type == 'Sample':
-                type = 'Sample'
+            elif spot.type == 'sample':
+                type = 'sample'
                 conc = ''
                 sample_group = spot.sampleGrp
                 sample_no = spot.idNo

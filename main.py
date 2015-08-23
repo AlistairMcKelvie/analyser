@@ -3,9 +3,11 @@ import kivy
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.core.image import Image
+
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
+from kivy.uix.label import Label
 
 from kivy.graphics.vertex_instructions import Rectangle
 from kivy.graphics import Color
@@ -25,6 +27,9 @@ from color_reader import ColorReaderSpot,\
                          ColorReader,\
                          CalibrationScreen,\
                          SampleScreen
+from analyser_display import CalibResultsScreen,\
+                             SampleResultsScreen
+from analyser_util import channelIndexFromName 
 from sendGmail import sendMail
 from datetime import datetime
 
@@ -61,12 +66,16 @@ class AnalyserApp(App):
         '''Runs when app starts'''
         self.mainMenuScreen = MainMenuScreen()
         self.imageMenuScreen = ImageMenuScreen()
-        self.graphScreen = GraphScreen()
+        self.fileChooserScreen = FileChooserScreen()
+        self.calibChooserScreen = CalibChooserScreen()
+        
         Builder.load_file('color_reader.kv')
         self.calibrationScreen = CalibrationScreen()
         self.sampleScreen = SampleScreen()
-        self.fileChooserScreen = FileChooserScreen()
-        self.calibChooserScreen = CalibChooserScreen()
+        
+        Builder.load_file('analyser_display.kv')
+        self.calibResultsScreen = CalibResultsScreen()
+        self.sampleResltsScreen = SampleResultsScreen()
 
         self.initializeCalib()
         self.initializeSample()
@@ -79,6 +88,31 @@ class AnalyserApp(App):
     def goto_main_menu(self):
         self.clearAllWidgets()
         Window.add_widget(self.mainMenuScreen)
+
+    
+    def goto_calib_results(self):
+        spots = self.calibrationScreen.ids['colorReader'].spots
+        valuesTable = self.calibResultsScreen.ids['valuesTable']
+        colorIndex = channelIndexFromName(self.measuredChannel) 
+        for spot in spots:
+            row = BoxLayout()
+            valuesTable.add_widget(row)
+            row.add_widget(Label(text=str(spot.idNo)))
+            row.add_widget(Label(text=str(spot.conc)))
+            row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex])))))
+            row.add_widget(Label(text='{:.3f}'.format(spot.alpha)))
+
+        calibEqn = (u'Concentration = {0:.3f}\u03b1 + {1:.3f}'
+                    ).format(self.calib.M, self.calib.C)
+        self.calibResultsScreen.ids['calibEqn'].text = calibEqn 
+
+        self.clearAllWidgets()
+        Window.add_widget(self.calibResultsScreen)
+
+
+    def goto_sample_results(self):
+        self.clearAllWidgets()
+        Winddow.add_widget(self.sampleResultsScreen)
 
 
     def goto_image_menu(self):
@@ -158,7 +192,7 @@ class AnalyserApp(App):
         reader.currentSpotSize = int(self.config.get('technical', 'spotSize'))
         self.sampleScreen.updateSpotGrps()
         for spot in reader.spots:
-            spot.type = 'Sample'
+            spot.type = 'sample'
             spot.conc = None
             spot.colorVal = None
             spotSize = self.config.get('SpotSizes', str(spot.idNo))
@@ -176,7 +210,7 @@ class AnalyserApp(App):
         else:
             spots = self.calibrationScreen.ids['colorReader'].spots
         for spot in spots:
-            if spot.type == 'Std':
+            if spot.type == 'std':
                 self.config.set('SpotTypes',
                                 str(spot.idNo), spot.type)
                 self.config.set('SpotConcentrations',
@@ -211,7 +245,6 @@ class AnalyserApp(App):
  
 
     def sendEmail(self):
-        self.calibrationScreen.canvas.ask_update()
         sendMail([self.config.get('email', 'address')],
                  ('Spot analyser files from {}'
                   ).format(self.writeDir.split('/')[-2].split('\\')[-1]),
@@ -265,10 +298,10 @@ class AnalyserApp(App):
             if key == 'measuredChannel':
                 self.measuredChannel = value
             elif key == 'spotSize':
-                self.calibScreen.ids['colorReader'].currentSpotSize =\
-                    self.config.get('technical', 'spotSize')
+                self.calibrationScreen.ids['colorReader'].currentSpotSize =\
+                    int(self.config.get('technical', 'spotSize'))
                 self.sampleScreen.ids['colorReader'].currentSpotSize =\
-                    self.config.get('technical', 'spotSize')
+                    int(self.config.get('technical', 'spotSize'))
 
 
     def writeCalibFile(self, calibFile, calib):

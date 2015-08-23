@@ -35,7 +35,7 @@
                 app.writeCalibFile(app.calibFile, app.calib)
                 am.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, app.measuredChannel, firstWrite=True)
                 app.targetReaderScreen = 'sample'
-                app.goto_image_menu()
+                app.goto_calib_results()
         TextInput:
             text: str(colorReader.currentSpotSize)
             font_size: self.height * 0.8
@@ -180,7 +180,7 @@
     ColorReader:
         id: colorReader
         spotCount: app.spotCount
-        currentSpotType: 'Sample'
+        currentSpotType: 'sample'
         x: root.width * 0.2
         y: root.height * 0.15
         width: root.width * 0.8

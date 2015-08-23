@@ -40,6 +40,7 @@ class ImageMenuScreen(BoxLayout):
 class GraphScreen(Widget):
     pass
 
+
 class FileChooserScreen(Widget):
     pass
 
@@ -67,10 +68,11 @@ class AnalyserApp(App):
         self.fileChooserScreen = FileChooserScreen()
         self.calibChooserScreen = CalibChooserScreen()
 
-        self.initializeCalibSpots()
-        self.initializeSampleSpots()
+        self.initializeCalib()
+        self.initializeSample()
         self.firstSample = True
         self.qConfCSV = 'Q_Crit_Vals.csv'
+        self.measuredChannel = self.config.get('technical', 'measuredChannel')
         return self.mainMenuScreen
     
 
@@ -115,10 +117,10 @@ class AnalyserApp(App):
         
         # color reader initialization
         reader.imageFile = imageFile
-        reader.initialDraw()
         readerScreen.tex = Image(imageFile).texture
         self.clearAllWidgets()
         Window.add_widget(readerScreen)
+        reader.initialDraw()
 
     
     def goto_graph(self):
@@ -133,8 +135,9 @@ class AnalyserApp(App):
         Window.add_widget(self.graphScreen)
 
 
-    def initializeCalibSpots(self):
+    def initializeCalib(self):
         reader = self.calibrationScreen.ids['colorReader']
+        reader.currentSpotSize = int(self.config.get('technical', 'spotSize'))
         for spot in reader.spots:
             spotType = self.config.get('SpotTypes', str(spot.idNo))
             if spotType != 'None':
@@ -145,19 +148,14 @@ class AnalyserApp(App):
             spotSize = self.config.get('SpotSizes', str(spot.idNo))
             spotX = self.config.get('SpotX', str(spot.idNo))
             spotY = self.config.get('SpotY', str(spot.idNo))
-            print 'spot size', spotSize
-            print 'spot x', spotX
-            print 'spot y', spotY
             if spotSize != 'None':
-                spot.instGrp.add(Rectangle(size=(float(spotSize),
-                                                 float(spotSize)),
-                                           pos=(float(spotX),
-                                                float(spotY))))
+                spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
+                spot.addBlankSpots()
 
 
-    def initializeSampleSpots(self):
+    def initializeSample(self):
         reader = self.sampleScreen.ids['colorReader']
-        reader.currentSpotType = 'Sample'
+        reader.currentSpotSize = int(self.config.get('technical', 'spotSize'))
         self.sampleScreen.updateSpotGrps()
         for spot in reader.spots:
             spot.type = 'Sample'
@@ -167,34 +165,41 @@ class AnalyserApp(App):
             spotX = self.config.get('SpotX', str(spot.idNo))
             spotY = self.config.get('SpotY', str(spot.idNo))
             if spotSize != 'None':
-                spot.instGrp.add(Rectangle(size=(float(spotSize),
-                                                  float(spotSize)),
-                                            pos=(float(spotX),
-                                                 float(spotY))))
+                spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
+                spot.addBlankSpots()
 
 
     def writeSpotsToConfig(self):
+        print 'writing to config'
         if self.targetReaderScreen == 'sample':
             spots = self.sampleScreen.ids['colorReader'].spots
         else:
             spots = self.calibrationScreen.ids['colorReader'].spots
         for spot in spots:
-            if spot.type == 'Std' or spot.type == 'Blank':
-                self.config.set('SpotTypes', str(spot.idNo), spot.type)
-                self.config.set('SpotConcentrations', str(spot.idNo), spot.conc)
+            if spot.type == 'Std':
+                self.config.set('SpotTypes',
+                                str(spot.idNo), spot.type)
+                self.config.set('SpotConcentrations',
+                                str(spot.idNo), spot.conc)
             graphicsInstructs = spot.instGrp.children
-            if len(graphicsInstructs) == 3:
-                self.config.set('SpotSizes', str(spot.idNo), int(graphicsInstructs[2].size[0]))
-                self.config.set('SpotX', str(spot.idNo), int(graphicsInstructs[2].pos[0]))
-                self.config.set('SpotY', str(spot.idNo), int(graphicsInstructs[2].pos[1]))
+            if len(graphicsInstructs) == 3 or 11:
+                self.config.set('SpotSizes', str(spot.idNo),
+                                int(graphicsInstructs[2].size[0]))
+                self.config.set('SpotX', str(spot.idNo),
+                                int(graphicsInstructs[2].pos[0]))
+                self.config.set('SpotY', str(spot.idNo),
+                                int(graphicsInstructs[2].pos[1]))
         self.config.write()
 
 
     def build_config(self, config):
         config.setdefaults('kivy', {'log_dir': self.user_data_dir})
-        config.setdefaults('defaults', {'spotCount': 15, 'spotSize': 10})
-        self.spotCount = int(config.get('defaults', 'spotCount'))
-        self.defaultSpotSize = int(config.get('defaults', 'spotSize')) 
+        config.setdefaults('technical', {'spotCount': 15,
+                                         'spotSize': 10,
+                                         'measuredChannel': 'red'})
+        config.setdefaults('email', {'address': 'example@company.com'})
+        self.spotCount = int(config.get('technical', 'spotCount'))
+        
         noneDict = {}
         for i in range(1, self.spotCount + 1):
             noneDict[str(i)] = None
@@ -207,7 +212,7 @@ class AnalyserApp(App):
 
     def sendEmail(self):
         self.calibrationScreen.canvas.ask_update()
-        sendMail(['alistair.mckelvie@gmail.com'],
+        sendMail([self.config.get('email', 'address')],
                  ('Spot analyser files from {}'
                   ).format(self.writeDir.split('/')[-2].split('\\')[-1]),
                  ('Spot analyser files from {}'
@@ -245,22 +250,32 @@ class AnalyserApp(App):
         Clock.schedule_once(self.new_photo_callback, 0.3)
         return False
 
+
     def new_photo_callback(self, dt):
         self.goto_color_reader_screen(self.cameraFile)
 
 
-    def on_pause(self):
-        return True
+    def build_settings(self, settings):
+        settings.add_json_panel('Settings', self.config, 'settings.json')
 
-    def on_resume(self):
-        pass 
+
+    def on_config_change(self, config, section, key, value):
+        print config, section, key, value
+        if section == 'technical':
+            if key == 'measuredChannel':
+                self.measuredChannel = value
+            elif key == 'spotSize':
+                self.calibScreen.ids['colorReader'].currentSpotSize =\
+                    self.config.get('technical', 'spotSize')
+                self.sampleScreen.ids['colorReader'].currentSpotSize =\
+                    self.config.get('technical', 'spotSize')
+
 
     def writeCalibFile(self, calibFile, calib):
         with open(calibFile, 'wb') as f:
             f.write('M: {}\n'.format(calib.M))
             f.write('C: {}\n'.format(calib.C))
             f.write('R2: {}\n'.format(calib.R2))
-            f.write('Blank: {}\n'.format(calib.blank))
             f.write('Measured Channel: {}\n'.format(calib.channel))            
 
 
@@ -269,10 +284,9 @@ class AnalyserApp(App):
             M = f.next().split()[1]
             C = f.next().split()[1]
             R2 = f.next().split()[1]
-            blank = f.next().split()[1]
             measuredChannel = f.next().split()[1]
-        Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'blank', 'channel'])
-        return Calib(M=M, C=C, R2=R2, blank=blank, channel=measuredChannel)
+        Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'channel'])
+        return Calib(M=M, C=C, R2=R2, channel=measuredChannel)
 
 
     def create_new_data_set(self):
@@ -285,6 +299,14 @@ class AnalyserApp(App):
             setDataDir = setDataDir[:-1] + '_2/'
             os.mkdir(setDataDir)
         return setDataDir
+
+
+    def on_pause(self):
+        return True
+
+
+    def on_resume(self):
+        pass 
 
 
 class MsgPopup(Popup):

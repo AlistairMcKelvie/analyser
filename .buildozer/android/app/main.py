@@ -2,7 +2,6 @@ import kivy
 
 from kivy.app import App
 from kivy.core.window import Window
-from kivy.uix.image import AsyncImage
 from kivy.core.image import Image
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
@@ -19,10 +18,7 @@ from plyer import camera
 from PIL import Image as PILImage
 
 import os
-import os.path
 import csv
-import math
-from collections import namedtuple
 
 from myGraph import MyGraph
 from color_reader import ColorReaderSpot,\
@@ -43,6 +39,7 @@ class ImageMenuScreen(BoxLayout):
 
 class GraphScreen(Widget):
     pass
+
 
 class FileChooserScreen(Widget):
     pass
@@ -75,17 +72,8 @@ class AnalyserApp(App):
         self.initializeSampleSpots()
         self.firstSample = True
         self.qConfCSV = 'Q_Crit_Vals.csv'
-        #print 'listing dir'
-        #self.listall(os.getcwd())
         return self.mainMenuScreen
     
-    def listall(self, dir):
-        for x in os.listdir(dir):
-            if os.path.isfile(dir + '/' + x):
-                print dir + '/' + x
-            elif os.path.isdir(dir + '/' + x):
-                self.listall(dir + '/' + x)
-
 
     def goto_main_menu(self):
         self.clearAllWidgets()
@@ -93,9 +81,6 @@ class AnalyserApp(App):
 
 
     def goto_image_menu(self):
-        print 'self.directory', self.directory
-        print 'self.user_data_dir', self.user_data_dir
-        print 'os.getcwd', os.getcwd()
         self.clearAllWidgets()
         Window.add_widget(self.imageMenuScreen)
 
@@ -131,34 +116,12 @@ class AnalyserApp(App):
         
         # color reader initialization
         reader.imageFile = imageFile
-        reader.initialDraw()
         readerScreen.tex = Image(imageFile).texture
         self.clearAllWidgets()
         Window.add_widget(readerScreen)
+        reader.initialDraw()
 
     
-    def create_temp_dir(self):
-        tempDir = os.getcwd() + '/temp'
-        try:
-            os.mkdir(tempDir)
-        except Exception:
-            pass
-        return tempDir
-    
-    def resize_image(self, imageFile, writeDir):
-        basewidth = 800
-        img = PILImage.open(imageFile)
-        print 'original image size', img.size
-        wpercent = basewidth / float(img.size[0])
-        hsize = int(float(img.size[1]) * float(wpercent))
-        img = img.resize((basewidth, hsize))
-        savedFile = writeDir + 'resized_' + os.path.basename(imageFile)
-        img.save(savedFile)
-        print 'resize image size', img.size
-        del img
-        return savedFile
-
-
     def goto_graph(self):
         colorReader = self.colorReaderScreen.ids['colorReader']
         if [i.type for i in colorReader.spots].count('Blank') == 0:
@@ -187,10 +150,8 @@ class AnalyserApp(App):
             print 'spot x', spotX
             print 'spot y', spotY
             if spotSize != 'None':
-                spot.instGrp.add(Rectangle(size=(float(spotSize),
-                                                 float(spotSize)),
-                                           pos=(float(spotX),
-                                                float(spotY))))
+                spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
+                spot.addBlankSpots()
 
 
     def initializeSampleSpots(self):
@@ -205,10 +166,8 @@ class AnalyserApp(App):
             spotX = self.config.get('SpotX', str(spot.idNo))
             spotY = self.config.get('SpotY', str(spot.idNo))
             if spotSize != 'None':
-                spot.instGrp.add(Rectangle(size=(float(spotSize),
-                                                  float(spotSize)),
-                                            pos=(float(spotX),
-                                                 float(spotY))))
+                spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
+                spot.addBlankSpots()
 
 
     def writeSpotsToConfig(self):
@@ -259,8 +218,6 @@ class AnalyserApp(App):
 
 
     def take_photo(self, fileType, sampleGrp=None):
-        print 'canvas', self.calibrationScreen.canvas.children
-        print 'canvas.before', self.calibrationScreen.canvas.before.children
         assert fileType == 'calib' or fileType == 'sample'
         print 'fileType', fileType
         if fileType == 'calib':
@@ -282,7 +239,7 @@ class AnalyserApp(App):
     def camera_callback(self, imageFile, **kwargs):
         print 'got camera callback'
         PILImage.open(imageFile).resize((800,600)).save(imageFile)
-        Clock.schedule_once(self.new_photo_callback, 2.5)
+        Clock.schedule_once(self.new_photo_callback, 0.3)
         return False
 
     def new_photo_callback(self, dt):
@@ -290,12 +247,10 @@ class AnalyserApp(App):
 
 
     def on_pause(self):
-        print 'pausing analyser'
         return True
 
     def on_resume(self):
-        print 'on resume called'
-   
+        pass 
 
     def writeCalibFile(self, calibFile, calib):
         with open(calibFile, 'wb') as f:
@@ -332,7 +287,6 @@ class AnalyserApp(App):
 class MsgPopup(Popup):
     def __init__(self, msg):
         super(MsgPopup, self).__init__()
-
         self.ids.message_label.text = msg
 
 

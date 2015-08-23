@@ -2,6 +2,7 @@ import math
 import csv
 from collections import namedtuple, OrderedDict
 from color_reader import ColorReaderSpot
+from analyser_util import channelIndexFromName 
 
 
 class CalcLogger(object):
@@ -24,9 +25,8 @@ class CalcLogger(object):
             self.f.write('{}\n'.format(st.encode('utf-8')))
 
 
-def calculateConc(calib, colorVal):
-    A = -math.log10(colorVal / calib.blank)
-    result = (A - calib.C) / calib.M
+def calculateConc(calib, alpha):
+    result = (alpha - calib.C) / calib.M
     return result
 
 
@@ -42,15 +42,16 @@ def readQConf(N, conf, qConfCSV):
 
 
 def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
-    log = CalcLogger('log', calcLog).log
+    log = CalcLogger('print', calcLog).log
     channelIndex = channelIndexFromName(measuredChannel)
-    colorValAverageDict = {}
+    alphaAverageDict = {}
     concSet = set()
     spotConcDict = OrderedDict()
+
+    # put lists of spots with the same conc in a dictionary
     for spot in spots:
         concSet.add(spot.conc)
     while concSet:
-        #TODO: handle no blank value
         spotConcDict[concSet.pop()] = []
     for spot in spots:
         spot.exclude = False
@@ -60,64 +61,85 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
         #TODO handle cases for less than 3 spots or more that 10
         assert len(spotConcDict[conc]) > 2
         assert len(spotConcDict[conc]) <= 10
-        log('color values for {}'.format(conc))
-        for sp in spotConcDict[conc]:
-            log('{0}  {1}'.format(sp.idNo, sp.colorVal[channelIndex]))
-        recQ = readQConf(len(spotConcDict[conc]), CL, qConfCSV)
-        spotConcDict[conc].sort(key=lambda spot: spot.colorVal[channelIndex])
+        log(u'calculating \u03b1 values')
+        log(u'\u03b1 = -log(color value/blank value)')
+        log('values for {}'.format(conc))
+        log(u'ID    Color Val     Blank Val     \u03b1')
+        for spot in spotConcDict[conc]:
+            spot.alpha = -math.log(spot.colorVal[channelIndex]/
+                                   spot.blankVal[channelIndex])
+            log('{0: <2}    {1:9.3f}   {2:9.3f}    {3:9.3f}'.format(spot.idNo,
+                                              spot.colorVal[channelIndex],
+                                              spot.blankVal[channelIndex],
+                                              spot.alpha))
+        reqQ = readQConf(len(spotConcDict[conc]), CL, qConfCSV)
+        spotConcDict[conc].sort(key=lambda spot: spot.alpha)
 
-        lowestVal = spotConcDict[conc][0].colorVal[channelIndex]
-        highestVal = spotConcDict[conc][-1].colorVal[channelIndex]
+        #TODO only remove one at most
+        lowestVal = spotConcDict[conc][0].alpha
+        highestVal = spotConcDict[conc][-1].alpha
         log('lowest value is {}'.format(lowestVal))
         log('highest value is {}'.format(highestVal))
         valRange = highestVal - lowestVal
         log('range is {}'.format(valRange))
-        secondLowest = spotConcDict[conc][1].colorVal[channelIndex] 
+
+        secondLowest = spotConcDict[conc][1].alpha
         qValLow = (secondLowest - lowestVal) / valRange 
         log(('Q-value for lowest is ({0} - {1})/{2} = {3}'
              ).format(secondLowest, lowestVal, valRange, qValLow))
         log(('max allowed Q-value for N: {0}, CL{1} is {2}'
-             ).format(len(spotConcDict[conc]), CL, recQ))
-        if qValLow <= recQ:
-            log('OK!')
+             ).format(len(spotConcDict[conc]), CL, reqQ))
+        if qValLow <= reqQ:
+            log('OK!\n')
+            lowestPassed = True
         else:
-            log('Failed! Treating as an outlier and excluding')
-            spotConcDict[conc][1].exclude = True
+            log('Failed!')
+            lowestPassed = False
 
         secondHighest = spotConcDict[conc][-2].colorVal[channelIndex] 
         qValHigh = (highestVal - secondHighest) / valRange 
         log(('Q-value for highest is ({0} - {1})/{2} = {3}'
              ).format(highestVal, secondHighest, valRange, qValHigh))
         log(('max allowed Q-value for N: {0}, CL{1} is {2}'
-             ).format(len(spotConcDict[conc]), CL, recQ))
-        if qValHigh <= recQ:
-            log('OK!')
+             ).format(len(spotConcDict[conc]), CL, reqQ))
+        if qValHigh <= reqQ:
+            log('OK!\n')
+            highestPassed = True
         else:
-            log('Failed! Treating as an outlier and excluding')
+            log('Failed!')
+            highestPassed = False
+
+        if not lowestPassed and not highestPassed:
+            log('both lowest and highest values failed')
+            if qValLow > qValHigh:
+                log('lower value is worse, excluding lower value')
+                spotConcDict[conc][0].exclude = True
+            else:
+                log('higher value is worse, excluding higher value')
+                spotConcDict[conc][-1].exclude = True
+        elif not lowestPassed:
+            log('lowest value failed, excluding')
+            spotConcDict[conc][0].exclude = True
+        elif not highestPassed:
+            log('highest value failed, excluding')
             spotConcDict[conc][-1].exclude = True
+        else:
+            log('all passed')
 
         valCount = 0
         valSum = 0.0
-        for sp in spotConcDict[conc]:
-            if sp.exclude is False:
+        for spot in spotConcDict[conc]:
+            if spot.exclude is False:
                 valCount += 1
-                valSum += sp.colorVal[channelIndex]
-        colorValAverageDict[conc] = valSum / valCount
-        log(('mean brightness value from {0} values for {1} is {2}'
-             ).format(valCount, conc, colorValAverageDict[conc]))
+                valSum += spot.alpha
+        alphaAverageDict[conc] = valSum / valCount
+        log(('mean alpha value from {0} values for {1} is {2}'
+             ).format(valCount, conc, alphaAverageDict[conc]))
         log('-----------------------------------------------------')
-
-    blankVal = colorValAverageDict[0]
-    
-    log(u'calculating \u03b1 values')
-    log(u'\u03b1 = -log(color value/blank value)')
-    log('blank value: {}'.format(blankVal))
-
+ 
     calibPoints = []
-    for key in colorValAverageDict:
-        alpha = -math.log10(colorValAverageDict[key] / blankVal)
-        calibPoints.append((key, alpha))
-        log(u'conc: {0}  \u03b1: {1}'.format(key, alpha))
+    for key in alphaAverageDict:
+        calibPoints.append((key, alphaAverageDict[key]))
 
     # Make calibration curve
     N = len(calibPoints)
@@ -158,21 +180,8 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
         log('SStot = {}'.format(SStot))
         R2 = 1 - SSres / SStot
         log(u'R\u00b2 = {:.5f}'.format(R2))
-        Calib = namedtuple('CalibCurve',
-                           ['M', 'C', 'R2', 'blank', 'channel'])
-        return Calib(M=M, C=C, R2=R2, blank=blankVal,
-                     channel=measuredChannel)
-
-
-def channelIndexFromName(measuredChannel):
-    if measuredChannel == 'red':
-        return 0
-    if measuredChannel == 'green':
-        return 1
-    if measuredChannel == 'blue':
-        return 2
-    raise RuntimeError('{} is not a valid channel '
-                       'name.'.format(measuredChannel))
+        Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'channel'])
+        return Calib(M=M, C=C, R2=R2, channel=measuredChannel)
 
 
 def writeRawData(calib, rawFile, spots, measuredChannel, firstWrite=False):
@@ -187,7 +196,7 @@ def writeRawData(calib, rawFile, spots, measuredChannel, firstWrite=False):
     with open(rawFile, 'ab') as sFile:
         csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
         for spot in spots:
-            if spot.type == 'Blank' or spot.type == 'Std':
+            if spot.type == 'Std':
                 type = 'Standard'
                 conc = spot.conc
                 sample_group = ''
@@ -197,7 +206,7 @@ def writeRawData(calib, rawFile, spots, measuredChannel, firstWrite=False):
                 conc = ''
                 sample_group = spot.sampleGrp
                 sample_no = spot.idNo
-            calculatedConc = calculateConc(calib, spot.colorVal[channelIndex])
+            calculatedConc = calculateConc(calib, spot.alpha)
             if spot.colorMode == 'RGBA':
                 alpha = '{:.3f}'.format(spot.colorVal[3])
             else:
@@ -224,9 +233,9 @@ def percentile(percentileNo, data):
 
 
 def writeSamplesFile(calib, samplesFile, spots, calcLog, firstWrite=False):
-    log = CalcLogger('log', calcLog).log
+    log = CalcLogger('print', calcLog).log
     log('-----------------------------------------------------')
-    colorIndex = channelIndexFromName(calib.channel)
+    channelIndex = channelIndexFromName(calib.channel)
     fieldNames = ['sample_group', 'calculated_concentration']
     if firstWrite:
         with open(samplesFile, 'wb') as f:
@@ -240,19 +249,26 @@ def writeSamplesFile(calib, samplesFile, spots, calcLog, firstWrite=False):
         assert sampleGrp is None or spot.sampleGrp == sampleGrp
         sampleGrp = spot.sampleGrp
     log('sample group: {}'.format(sampleGrp))
-
-    valList = []
+    log(u'calculating \u03b1 values')
+    log(u'\u03b1 = -log(color value/blank value)')
+    log(u'ID    Color Val     Blank Val     \u03b1')
+    alphaList = []
     for spot in spots:
-        log(('Spot: {}   brightness: {}'
-             ).format(spot.idNo, spot.colorVal[colorIndex]))
-        valList.append(spot.colorVal[colorIndex])
-    tenP = percentile(10, valList)
+        spot.alpha = -math.log(spot.colorVal[channelIndex]/
+                               spot.blankVal[channelIndex])
+        log(('{0: <2}  {1:9.3f}    {2:9.3f}  {3:9.3f}'
+             ).format(spot.idNo,
+                     spot.colorVal[channelIndex],
+                     spot.blankVal[channelIndex],
+                     spot.alpha))
+        alphaList.append(spot.alpha)
+    tenP = percentile(10, alphaList)
     log('10th percentile: {}'.format(tenP))
-    nintyP = percentile(90, valList)
+    nintyP = percentile(90, alphaList)
     log('90th percentile: {}'.format(nintyP))
 
     includedList = []
-    for val in valList:
+    for val in alphaList:
         if val < tenP or val > nintyP:
             log('excluding {}'.format(val))
         else:
@@ -265,5 +281,4 @@ def writeSamplesFile(calib, samplesFile, spots, calcLog, firstWrite=False):
         csvWriter = csv.DictWriter(f, fieldNames)
         csvWriter.writerow({'sample_group': sampleGrp,
                             'calculated_concentration': calcConc})
-
 

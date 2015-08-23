@@ -2,6 +2,9 @@
 <MainMenuScreen>:
     orientation: 'vertical'
     Button:
+        text: 'Settings'
+        on_release: app.open_settings()
+    Button:
         text: 'Get New Calibration Set'
         text_size: self.size
         font_size: '30sp'

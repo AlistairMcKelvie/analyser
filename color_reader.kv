@@ -9,6 +9,7 @@
     ColorReader:
         id: colorReader
         spotCount: app.spotCount
+        currentSpotType: 'std'
         x: root.width * 0.2
         y: root.height * 0.15
         width: root.width * 0.8
@@ -19,6 +20,9 @@
         width: root.width * 0.2
         height: root.height * 0.85
         orientation: 'vertical'
+        Button:
+            text: 'Reposition Spots'
+            on_release: colorReader.scanAllSpots(app.measuredChannel)
         Button:
             text: 'Use this \ncalibration'
             text_size: self.size
@@ -176,6 +180,7 @@
     ColorReader:
         id: colorReader
         spotCount: app.spotCount
+        currentSpotType: 'Sample'
         x: root.width * 0.2
         y: root.height * 0.15
         width: root.width * 0.8
@@ -186,6 +191,9 @@
         width: root.width * 0.2
         height: root.height * 0.85
         orientation: 'vertical'
+        Button:
+            text: 'Reposition Spots'
+            on_release: colorReader.scanAllSpots(app.measuredChannel)
         TextInput:
             text: str(root.sampleGrp)
             font_size: self.height * 0.8
@@ -209,8 +217,8 @@
             valign: 'middle'
             on_release:
                 app.writeSpotsToConfig()
-                am.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots, app.measuredChannel)
                 am.writeSamplesFile(app.calib, app.samplesFile, app.sampleScreen.ids['colorReader'].spots, app.calcLog, app.firstSample)
+                am.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots, app.measuredChannel)
                 app.firstSample = False
                 root.sampleGrp += 1
                 app.goto_image_menu()

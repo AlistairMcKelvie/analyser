@@ -1,7 +1,7 @@
 <CalibResultsScreen>
     orientation: 'vertical'
     BoxLayout:
-        size_hint_y: 0.1
+        size_hint_y: 0.075
         Label:
             text: 'Spot No.'
         Label:
@@ -9,24 +9,48 @@
         Label:
             text: 'Color Value'
         Label:
-            text: u'\u03b1'
-        
-    BoxLayout:
-        orientation: 'vertical'
-        id: valuesTable
+            text: u'\u03b1'   
+    ScrollView:
+        size_hint_y: 0.4
+        BoxLayout:
+            size_hint_y: None
+            orientation: 'vertical'
+            id: valuesTable
+    CalibGraph:
+        id: calibGraph
     Label:
         size_hint_y: 0.1
         id: calibEqn
+    BoxLayout:
+        size_hint_y: 0.1
+        Button:
+            text: 'Add to calibration'
+        Button:
+            text: 'Get Sample'
+            on_release: app.goto_image_menu()
+
+<SampleResultsScreen>
+    orientation: 'vertical'
+    BoxLayout:
+        size_hint_y: 0.075
+        Label:
+            text: 'Spot No.'
+        Label:
+            text: 'Stated Concentration'
+        Label:
+            text: 'Color Value'
+        Label:
+            text: u'\u03b1' 
+    ScrollView:
+        size_hint_y: 0.8
+        BoxLayout:
+            size_hint_y: None
+            orientation: 'vertical'
+            id: valuesTable
+    Label:
+        size_hint_y: 0.1
+        id: calcConc
     Button:
         size_hint_y: 0.1
         text: 'Get Sample'
         on_release: app.goto_image_menu()
-
-<SampleResultsScreen>
-    orientation: 'vertical'
-    Label:
-        text: 'Raw Values'
-    Label:
-        text: 'Color: 220'
-    Button:
-        text: 'Get Sample'

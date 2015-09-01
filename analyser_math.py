@@ -232,22 +232,14 @@ def percentile(percentileNo, data):
     return result
 
 
-def writeSamplesFile(calib, samplesFile, spots, calcLog, firstWrite=False):
+def calculateSampleConc(calib, spots, calcLog, sampleGrp):
     log = CalcLogger('print', calcLog).log
     log('-----------------------------------------------------')
     channelIndex = channelIndexFromName(calib.channel)
-    fieldNames = ['sample_group', 'calculated_concentration']
-    if firstWrite:
-        with open(samplesFile, 'wb') as f:
-            csvWriter = csv.DictWriter(f, fieldNames)
-            csvWriter.writeheader()
-    concSum = 0
-    sampleGrp = None
 
     # check sample grp
     for spot in spots:
         assert sampleGrp is None or spot.sampleGrp == sampleGrp
-        sampleGrp = spot.sampleGrp
     log('sample group: {}'.format(sampleGrp))
     log(u'calculating \u03b1 values')
     log(u'\u03b1 = -log(color value/blank value)')
@@ -277,8 +269,76 @@ def writeSamplesFile(calib, samplesFile, spots, calcLog, firstWrite=False):
     log('mean of remaining brightness values: {}'.format(valMean))
     calcConc = calculateConc(calib, valMean)
     log('calculated concentration: {}'.format(calcConc))
+
+    return calcConc
+
+
+def writeSamplesFile(samplesFile, calcConc, sampleGrp, firstWrite=False): 
+    fieldNames = ['sample_group', 'calculated_concentration']
+    if firstWrite:
+        with open(samplesFile, 'wb') as f:
+            csvWriter = csv.DictWriter(f, fieldNames)
+            csvWriter.writeheader()
     with open(samplesFile, 'ab') as f:
         csvWriter = csv.DictWriter(f, fieldNames)
         csvWriter.writerow({'sample_group': sampleGrp,
                             'calculated_concentration': calcConc})
+
+
+def qTest(spots,  measuredChannel, qConfCSV, CL, logger=None):
+    if logger is None:
+        def log(logger):
+            pass
+    else:
+        log = logger
+
+    lowestVal = spots[0].alpha
+    highestVal = spots[-1].alpha
+    log('lowest value is {}'.format(lowestVal))
+    log('highest value is {}'.format(highestVal))
+    valRange = highestVal - lowestVal
+    log('range is {}'.format(valRange))
+
+    secondLowest = spots[1].alpha
+    qValLow = (secondLowest - lowestVal) / valRange 
+    log(('Q-value for lowest is ({0} - {1})/{2} = {3}'
+         ).format(secondLowest, lowestVal, valRange, qValLow))
+    log(('max allowed Q-value for N: {0}, CL{1} is {2}'
+         ).format(len(spots), CL, reqQ))
+    if qValLow <= reqQ:
+        log('OK!\n')
+        lowestPassed = True
+    else:
+        log('Failed!')
+        lowestPassed = False
+
+    secondHighest = spots[-2].alpha 
+    qValHigh = (highestVal - secondHighest) / valRange 
+    log(('Q-value for highest is ({0} - {1})/{2} = {3}'
+         ).format(highestVal, secondHighest, valRange, qValHigh))
+    log(('max allowed Q-value for N: {0}, CL{1} is {2}'
+         ).format(len(spots), CL, reqQ))
+    if qValHigh <= reqQ:
+        log('OK!\n')
+        highestPassed = True
+    else:
+        log('Failed!')
+        highestPassed = False
+
+    if not lowestPassed and not highestPassed:
+        log('both lowest and highest values failed')
+        if qValLow > qValHigh:
+            log('lower value is worse, excluding lower value')
+            spots[0].exclude = True
+        else:
+            log('higher value is worse, excluding higher value')
+            spots[-1].exclude = True
+    elif not lowestPassed:
+        log('lowest value failed, excluding')
+        spots[0].exclude = True
+    elif not highestPassed:
+        log('highest value failed, excluding')
+        spots[-1].exclude = True
+    else:
+        log('all passed')
 

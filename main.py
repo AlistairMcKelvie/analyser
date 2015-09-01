@@ -11,7 +11,7 @@ from kivy.uix.label import Label
 
 from kivy.graphics.vertex_instructions import Rectangle
 from kivy.graphics import Color
-from kivy.properties import StringProperty
+from kivy.properties import StringProperty, OptionProperty, ListProperty
 from kivy.lang import Builder
 from kivy import platform
 from kivy.clock import Clock
@@ -55,7 +55,8 @@ class CalibChooserScreen(Widget):
 
 
 class AnalyserApp(App):
-    measuredChannel = StringProperty('red')
+    measuredChannel = OptionProperty('red', options=['red', 'green', 'blue'])
+    calibSpots = ListProperty([])
     targetReaderScreen = StringProperty('')
     stdsFile = StringProperty('')
     calibFile = StringProperty('')
@@ -75,7 +76,7 @@ class AnalyserApp(App):
         
         Builder.load_file('analyser_display.kv')
         self.calibResultsScreen = CalibResultsScreen()
-        self.sampleResltsScreen = SampleResultsScreen()
+        self.sampleResultsScreen = SampleResultsScreen()
 
         self.initializeCalib()
         self.initializeSample()
@@ -89,18 +90,21 @@ class AnalyserApp(App):
         self.clearAllWidgets()
         Window.add_widget(self.mainMenuScreen)
 
-    
+
     def goto_calib_results(self):
-        spots = self.calibrationScreen.ids['colorReader'].spots
         valuesTable = self.calibResultsScreen.ids['valuesTable']
+        calibGraph = self.calibResultsScreen.ids['calibGraph']
+        calibGraph.drawSpots(self.calibSpots)
+        calibGraph.drawCurve(self.calib)
         colorIndex = channelIndexFromName(self.measuredChannel) 
-        for spot in spots:
+        for spot in self.calibSpots:
             row = BoxLayout()
             valuesTable.add_widget(row)
             row.add_widget(Label(text=str(spot.idNo)))
             row.add_widget(Label(text=str(spot.conc)))
             row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex])))))
             row.add_widget(Label(text='{:.3f}'.format(spot.alpha)))
+        valuesTable.height = len(self.calibSpots) * 30
 
         calibEqn = (u'Concentration = {0:.3f}\u03b1 + {1:.3f}'
                     ).format(self.calib.M, self.calib.C)
@@ -110,9 +114,21 @@ class AnalyserApp(App):
         Window.add_widget(self.calibResultsScreen)
 
 
-    def goto_sample_results(self):
+    def goto_sample_results(self, spots, conc):
+        valuesTable = self.sampleResultsScreen.ids['valuesTable']
+        colorIndex  = channelIndexFromName(self.measuredChannel)
+        for spot in spots:
+            row = BoxLayout()
+            valuesTable.add_widget(row)
+            row.add_widget(Label(text=str(spot.idNo)))
+            row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex])))))
+            row.add_widget(Label(text='{:.3f}'.format(spot.alpha)))
+        valuesTable.height = len(self.calibSpots) * 30
+        
+        self.sampleResultsScreen.ids['calcConc'].text =\
+            'Calculated Concentration: {:.3f}'.format(conc)
         self.clearAllWidgets()
-        Winddow.add_widget(self.sampleResultsScreen)
+        Window.add_widget(self.sampleResultsScreen)
 
 
     def goto_image_menu(self):

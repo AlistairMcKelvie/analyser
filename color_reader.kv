@@ -31,7 +31,8 @@
             valign: 'middle'
             on_release:
                 app.writeSpotsToConfig()
-                app.calib = am.calculateACalibCurve(app.calibrationScreen.ids['colorReader'].spots, app.calcLog, app.measuredChannel, app.qConfCSV)
+                app.calibSpots.extend(colorReader.spots)
+                app.calib = am.calculateACalibCurve(app.calibSpots, app.calcLog, app.measuredChannel, app.qConfCSV)
                 app.writeCalibFile(app.calibFile, app.calib)
                 am.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, app.measuredChannel, firstWrite=True)
                 app.targetReaderScreen = 'sample'
@@ -217,11 +218,12 @@
             valign: 'middle'
             on_release:
                 app.writeSpotsToConfig()
-                am.writeSamplesFile(app.calib, app.samplesFile, app.sampleScreen.ids['colorReader'].spots, app.calcLog, app.firstSample)
+                calcConc = am.calculateSampleConc(app.calib, app.sampleScreen.ids['colorReader'].spots, app.calcLog, root.sampleGrp)
+                am.writeSamplesFile(app.samplesFile, calcConc, root.sampleGrp, app.firstSample) 
                 am.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots, app.measuredChannel)
                 app.firstSample = False
                 root.sampleGrp += 1
-                app.goto_image_menu()
+                app.goto_sample_results(app.sampleScreen.ids['colorReader'].spots, calcConc)
         Button:
             text: 'Send email'
             font_size: '15sp'
@@ -229,8 +231,9 @@
             valign: 'middle'
             on_release:
                 app.writeSpotsToConfig()
+                conc = am.calculateSampleConc(app.calib, app.sampleScreen.ids['colorReader'].spots, app.calcLog, root.sampleGrp)
+                am.writeSamplesFile(app.samplesFile, root.sampleGrp, app.firstSample) 
                 am.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots, app.measuredChannel)
-                am.writeSamplesFile(app.calib, app.samplesFile, app.sampleScreen.ids['colorReader'].spots, app.calcLog, app.firstSample)
                 app.firstSample = False
                 root.sampleGrp += 1
                 app.sendEmail()

@@ -10,6 +10,7 @@ from kivy.graphics import Color
 from kivy.core.image import Image
 
 from kivy.properties import StringProperty,\
+                            ListProperty,\
                             ReferenceListProperty,\
                             NumericProperty,\
                             ObjectProperty,\
@@ -83,6 +84,7 @@ class ColorReaderSpot(object):
 
 
 class ColorReader(Widget):
+    spots = ListProperty([])
     imageFile = StringProperty('')
     spotCount = NumericProperty(15)
     currentSpot = ObjectProperty(None)

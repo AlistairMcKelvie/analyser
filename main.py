@@ -22,7 +22,6 @@ from PIL import Image as PILImage
 import os
 import csv
 
-from myGraph import MyGraph
 from color_reader import ColorReaderSpot,\
                          ColorReader,\
                          CalibrationScreen,\
@@ -168,12 +167,51 @@ class AnalyserApp(App):
         
         # color reader initialization
         reader.imageFile = imageFile
-        readerScreen.tex = Image(imageFile).texture
+        tex = Image(imageFile).texture
+        self.addTextureAndResizeColorReader(tex, readerScreen)
         self.clearAllWidgets()
         Window.add_widget(readerScreen)
         reader.initialDraw()
 
-    
+
+    def addTextureAndResizeColorReader(self, tex, readerScreen):
+        windowSize = Window.size
+        print 'windowSize', windowSize
+        windowRatio = windowSize[0] / float(windowSize[1])
+        print 'windowRatio', windowRatio
+        texSize = tex.size
+        print 'texSize', tex.size
+        texRatio = texSize[0] / float(texSize[1])
+        print 'texRatio', texRatio
+        
+        if texRatio > windowRatio:
+            #texture is width constrained
+            width = windowSize[0] * 0.8
+            height = width / texRatio
+            x = windowSize[0] * 0.2
+            y = windowSize[1] * 0.2 + (windowSize[1] * 0.8 - height) / 2 
+        else:
+            #texture is height constrained
+            height = windowSize[1] * 0.8
+            width = height * texRatio
+            x = windowSize[0] * 0.2 + (windowSize[0] * 0.8 - width) / 2
+            y = windowSize[1] * 0.2
+
+        #size and position texture
+        for inst in readerScreen.canvas.children:
+            if str(type(inst)) == "<type 'kivy.graphics.vertex_instructions.Rectangle'>":
+                inst.size = (width, height)
+                inst.pos = (x,y)
+                inst.texture = tex
+
+        #size and position color reader
+        colorReader = readerScreen.ids['colorReader']
+        colorReader.width = width
+        colorReader.height = height
+        colorReader.x = x
+        colorReader.y = y
+        
+
     def goto_graph(self):
         colorReader = self.colorReaderScreen.ids['colorReader']
         if [i.type for i in colorReader.spots].count('Blank') == 0:
@@ -341,7 +379,7 @@ class AnalyserApp(App):
 
     def create_new_data_set(self):
         setDataDir = '{0}/{1:%Y%m%d_%H%M}/'.format(self.user_data_dir,
-                                                  datetime.now())
+                                                   datetime.now())
         # TODO handle data error if dir already exists
         try:
             os.mkdir(setDataDir)
@@ -357,7 +395,6 @@ class AnalyserApp(App):
             shutil.rmtree(fileChooser.selection[0])
             fileChooser._update_files()
         except Exception as e:
-            print e
             pass
 
 

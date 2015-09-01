@@ -5,7 +5,7 @@ from kivy.lang import Builder
 
 from kivy.garden.graph import Graph, MeshLinePlot
 
-from dotPlot import DotPlot
+from dot_plot import DotPlot
 from random import random
 
 from kivy.uix.label import Label

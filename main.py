@@ -32,6 +32,7 @@ from analyser_display import CalibResultsScreen,\
 from analyser_util import channelIndexFromName 
 from sendGmail import sendMail
 from datetime import datetime
+import shutil
 
 
 class MainMenuScreen(BoxLayout):
@@ -348,6 +349,16 @@ class AnalyserApp(App):
             setDataDir = setDataDir[:-1] + '_2/'
             os.mkdir(setDataDir)
         return setDataDir
+
+    
+    def delete_data_set(self):
+        fileChooser = self.calibChooserScreen.ids['calibChooser']
+        try:
+            shutil.rmtree(fileChooser.selection[0])
+            fileChooser._update_files()
+        except Exception as e:
+            print e
+            pass
 
 
     def on_pause(self):

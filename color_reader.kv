@@ -224,7 +224,7 @@
             valign: 'middle'
             on_release:
                 app.writeSpotsToConfig()
-                conc = am.calculateSampleConc(app.calib, app.sampleScreen.ids['colorReader'].spots, app.calcLog, root.sampleGrp)
+                conc = am.calculateSampleConc(app.calib, app.sampleScreen.ids['colorReader'].spots, app.calcLog, root.sampleGrp, app.qConfCSV)
                 am.writeSamplesFile(app.samplesFile, root.sampleGrp, app.firstSample) 
                 am.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots, app.measuredChannel)
                 app.firstSample = False

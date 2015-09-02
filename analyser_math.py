@@ -58,9 +58,6 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
         spotConcDict[spot.conc].append(spot)
 
     for conc in spotConcDict:
-        #TODO handle cases for less than 3 spots or more that 10
-        assert len(spotConcDict[conc]) > 2
-        assert len(spotConcDict[conc]) <= 10
         log(u'calculating \u03b1 values')
         log(u'\u03b1 = -log(color value/blank value)')
         log('values for {}'.format(conc))
@@ -72,59 +69,12 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
                                               spot.colorVal[channelIndex],
                                               spot.blankVal[channelIndex],
                                               spot.alpha))
-        reqQ = readQConf(len(spotConcDict[conc]), CL, qConfCSV)
         spotConcDict[conc].sort(key=lambda spot: spot.alpha)
-
-        #TODO only remove one at most
-        lowestVal = spotConcDict[conc][0].alpha
-        highestVal = spotConcDict[conc][-1].alpha
-        log('lowest value is {}'.format(lowestVal))
-        log('highest value is {}'.format(highestVal))
-        valRange = highestVal - lowestVal
-        log('range is {}'.format(valRange))
-
-        secondLowest = spotConcDict[conc][1].alpha
-        qValLow = (secondLowest - lowestVal) / valRange 
-        log(('Q-value for lowest is ({0} - {1})/{2} = {3}'
-             ).format(secondLowest, lowestVal, valRange, qValLow))
-        log(('max allowed Q-value for N: {0}, CL{1} is {2}'
-             ).format(len(spotConcDict[conc]), CL, reqQ))
-        if qValLow <= reqQ:
-            log('OK!\n')
-            lowestPassed = True
-        else:
-            log('Failed!')
-            lowestPassed = False
-
-        secondHighest = spotConcDict[conc][-2].colorVal[channelIndex] 
-        qValHigh = (highestVal - secondHighest) / valRange 
-        log(('Q-value for highest is ({0} - {1})/{2} = {3}'
-             ).format(highestVal, secondHighest, valRange, qValHigh))
-        log(('max allowed Q-value for N: {0}, CL{1} is {2}'
-             ).format(len(spotConcDict[conc]), CL, reqQ))
-        if qValHigh <= reqQ:
-            log('OK!\n')
-            highestPassed = True
-        else:
-            log('Failed!')
-            highestPassed = False
-
-        if not lowestPassed and not highestPassed:
-            log('both lowest and highest values failed')
-            if qValLow > qValHigh:
-                log('lower value is worse, excluding lower value')
-                spotConcDict[conc][0].exclude = True
-            else:
-                log('higher value is worse, excluding higher value')
-                spotConcDict[conc][-1].exclude = True
-        elif not lowestPassed:
-            log('lowest value failed, excluding')
-            spotConcDict[conc][0].exclude = True
-        elif not highestPassed:
-            log('highest value failed, excluding')
-            spotConcDict[conc][-1].exclude = True
-        else:
-            log('all passed')
+        
+        if len(spotConcDict[conc]) > 2:
+            qTest(spotConcDict[conc], qConfCSV, CL, log)
+        elif len(spotConcDict[conc]) > 10:
+            percentileTest(spots, log)
 
         valCount = 0
         valSum = 0.0
@@ -136,14 +86,15 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
         log(('mean alpha value from {0} values for {1} is {2}'
              ).format(valCount, conc, alphaAverageDict[conc]))
         log('-----------------------------------------------------')
- 
     calibPoints = []
     for key in alphaAverageDict:
         calibPoints.append((key, alphaAverageDict[key]))
 
     # Make calibration curve
     N = len(calibPoints)
-    if N >= 2:
+    if N < 2:
+        return None
+    else:
         log('Calculating LSR')
         log(u'conc = M\u03b1 + C')
         log(u'M = (n\u2211XY - \u2211X\u2211Y)/'
@@ -232,7 +183,7 @@ def percentile(percentileNo, data):
     return result
 
 
-def calculateSampleConc(calib, spots, calcLog, sampleGrp):
+def calculateSampleConc(calib, spots, calcLog, sampleGrp, qConfCSV, CL=90):
     log = CalcLogger('print', calcLog).log
     log('-----------------------------------------------------')
     channelIndex = channelIndexFromName(calib.channel)
@@ -253,23 +204,23 @@ def calculateSampleConc(calib, spots, calcLog, sampleGrp):
                      spot.colorVal[channelIndex],
                      spot.blankVal[channelIndex],
                      spot.alpha))
-        alphaList.append(spot.alpha)
-    tenP = percentile(10, alphaList)
-    log('10th percentile: {}'.format(tenP))
-    nintyP = percentile(90, alphaList)
-    log('90th percentile: {}'.format(nintyP))
+        
+    if len(spotConcDict[conc]) > 2:
+        qTest(spotConcDict[conc], qConfCSV, CL, log)
+    elif len(spotConcDict[conc]) > 10:
+        percentileTest(spots, log)
 
-    includedList = []
-    for val in alphaList:
-        if val < tenP or val > nintyP:
-            log('excluding {}'.format(val))
-        else:
-            includedList.append(val)
-    valMean = math.fsum(includedList) / len(includedList)
+    valCount = 0
+    valSum = 0.0
+    for spot in spotConcDict[conc]:
+        if spot.exclude is False:
+            valCount += 1
+            valSum += spot.alpha
+    valMean = valSum / valCount
+
     log('mean of remaining brightness values: {}'.format(valMean))
     calcConc = calculateConc(calib, valMean)
     log('calculated concentration: {}'.format(calcConc))
-
     return calcConc
 
 
@@ -285,12 +236,14 @@ def writeSamplesFile(samplesFile, calcConc, sampleGrp, firstWrite=False):
                             'calculated_concentration': calcConc})
 
 
-def qTest(spots,  measuredChannel, qConfCSV, CL, logger=None):
+def qTest(spots, qConfCSV, CL, logger=None):
     if logger is None:
         def log(logger):
             pass
     else:
         log = logger
+
+    reqQ = readQConf(len(spots), CL, qConfCSV)
 
     lowestVal = spots[0].alpha
     highestVal = spots[-1].alpha
@@ -342,3 +295,22 @@ def qTest(spots,  measuredChannel, qConfCSV, CL, logger=None):
     else:
         log('all passed')
 
+
+def percentileTest(spots, logger=None):
+    if logger is None:
+        def log(logger):
+            pass
+    else:
+        log = logger
+
+    alphaList = [x.alpha for x in spots]
+
+    tenP = percentile(10, alphaList)
+    log('10th percentile: {}'.format(tenP))
+    nintyP = percentile(90, alphaList)
+    log('90th percentile: {}'.format(nintyP))
+
+    for spot in spots:
+        if val < tenP or val > nintyP:
+            spot.exclude
+            log('excluding {}'.format(val))

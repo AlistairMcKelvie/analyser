@@ -16,11 +16,13 @@ from kivy.lang import Builder
 from kivy import platform
 from kivy.clock import Clock
 from plyer import camera
+import kivy.metrics as metrics
 
 from PIL import Image as PILImage
 
 import os
 import csv
+from collections import namedtuple
 
 from color_reader import ColorReaderSpot,\
                          ColorReader,\
@@ -81,6 +83,8 @@ class AnalyserApp(App):
         self.initializeCalib()
         self.initializeSample()
         self.firstSample = True
+        self.firstRaw = True
+        self.calibNo = 0
         self.qConfCSV = 'Q_Crit_Vals.csv'
         self.measuredChannel = self.config.get('technical', 'measuredChannel')
         return self.mainMenuScreen
@@ -95,19 +99,28 @@ class AnalyserApp(App):
         valuesTable = self.calibResultsScreen.ids['valuesTable']
         calibGraph = self.calibResultsScreen.ids['calibGraph']
         calibGraph.drawSpots(self.calibSpots)
-        calibGraph.drawCurve(self.calib)
+        if self.calib is not None:
+            calibGraph.drawCurve(self.calib)
         colorIndex = channelIndexFromName(self.measuredChannel) 
+        valuesTable.clear_widgets()
         for spot in self.calibSpots:
             row = BoxLayout()
             valuesTable.add_widget(row)
-            row.add_widget(Label(text=str(spot.idNo)))
-            row.add_widget(Label(text=str(spot.conc)))
-            row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex])))))
-            row.add_widget(Label(text='{:.3f}'.format(spot.alpha)))
-        valuesTable.height = len(self.calibSpots) * 30
-
-        calibEqn = (u'Concentration = {0:.3f}\u03b1 + {1:.3f}'
-                    ).format(self.calib.M, self.calib.C)
+            row.add_widget(Label(text=str(spot.idNo), font_size=metrics.dp(15)))
+            row.add_widget(Label(text=str(spot.conc), font_size=metrics.dp(15)))
+            row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex]))),
+                                font_size=metrics.dp(15)))
+            row.add_widget(Label(text=str(int(round(spot.blankVal))),
+                                font_size=metrics.dp(15)))
+            row.add_widget(Label(text='{:.3f}'.format(spot.alpha),
+                                 font_size=metrics.dp(15)))
+        valuesTable.height = len(self.calibSpots) * metrics.dp(20)
+        
+        if self.calib is None:
+            calibEqn = u'Not enough calibration points to calculate equation.'
+        else:
+            calibEqn = (u'Concentration = {0:.3f}\u03b1 + {1:.3f}      R\u00b2 = {2:.4f}'
+                        ).format(self.calib.M, self.calib.C, self.calib.R2)
         self.calibResultsScreen.ids['calibEqn'].text = calibEqn 
 
         self.clearAllWidgets()
@@ -117,13 +130,16 @@ class AnalyserApp(App):
     def goto_sample_results(self, spots, conc):
         valuesTable = self.sampleResultsScreen.ids['valuesTable']
         colorIndex  = channelIndexFromName(self.measuredChannel)
+        valuesTable.clear_widgets()
         for spot in spots:
             row = BoxLayout()
             valuesTable.add_widget(row)
-            row.add_widget(Label(text=str(spot.idNo)))
-            row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex])))))
-            row.add_widget(Label(text='{:.3f}'.format(spot.alpha)))
-        valuesTable.height = len(self.calibSpots) * 30
+            row.add_widget(Label(text=str(spot.idNo), font_size=metrics.dp(15)))
+            row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex]))),
+                                 font_size=metrics.dp(15)))
+            row.add_widget(Label(text='{:.3f}'.format(spot.alpha),
+                                 font_size=metrics.dp(15)))
+        valuesTable.height = len(spots) * metrics.dp(20)
         
         self.sampleResultsScreen.ids['calcConc'].text =\
             'Calculated Concentration: {:.3f}'.format(conc)
@@ -132,6 +148,8 @@ class AnalyserApp(App):
 
 
     def goto_image_menu(self):
+        if self.targetReaderScreen == 'calib':
+            self.calibNo += 1
         self.clearAllWidgets()
         Window.add_widget(self.imageMenuScreen)
 
@@ -164,7 +182,7 @@ class AnalyserApp(App):
         elif self.targetReaderScreen == 'sample':
             readerScreen = self.sampleScreen
         reader = readerScreen.ids['colorReader']
-        
+
         # color reader initialization
         reader.imageFile = imageFile
         tex = Image(imageFile).texture
@@ -313,11 +331,11 @@ class AnalyserApp(App):
             Window.remove_widget(widget)
 
 
-    def take_photo(self, fileType, sampleGrp=None):
+    def take_photo(self, fileType, calibNo=1, sampleGrp=1):
         assert fileType == 'calib' or fileType == 'sample'
         print 'fileType', fileType
         if fileType == 'calib':
-            filepath = self.writeDir + 'calib.jpg'
+            filepath = self.writeDir + 'calib_{}.jpg'.format(calibNo)
         else:
             filepath = self.writeDir + 'sample_{}.jpg'.format(sampleGrp)
         self.cameraFile = filepath
@@ -360,11 +378,12 @@ class AnalyserApp(App):
 
 
     def writeCalibFile(self, calibFile, calib):
-        with open(calibFile, 'wb') as f:
-            f.write('M: {}\n'.format(calib.M))
-            f.write('C: {}\n'.format(calib.C))
-            f.write('R2: {}\n'.format(calib.R2))
-            f.write('Measured Channel: {}\n'.format(calib.channel))            
+        if calib is not None:
+            with open(calibFile, 'wb') as f:
+                f.write('M: {}\n'.format(calib.M))
+                f.write('C: {}\n'.format(calib.C))
+                f.write('R2: {}\n'.format(calib.R2))
+                f.write('Channel: {}\n'.format(calib.channel))            
 
 
     def readCalibFile(self, calibFile):
@@ -378,13 +397,14 @@ class AnalyserApp(App):
 
 
     def create_new_data_set(self):
-        setDataDir = '{0}/{1:%Y%m%d_%H%M}/'.format(self.user_data_dir,
-                                                   datetime.now())
+        setDataDir = '{0}/{1:%Y%m%d_%H:%M}/'.format(self.user_data_dir,
+                                                    datetime.now())
         # TODO handle data error if dir already exists
         try:
             os.mkdir(setDataDir)
         except OSError:
-            setDataDir = setDataDir[:-1] + '_2/'
+            setDataDir = '{0}/{1:%Y%m%d_%H:%M:%S}/'.format(self.user_data_dir,
+                                                           datetime.now())
             os.mkdir(setDataDir)
         return setDataDir
 

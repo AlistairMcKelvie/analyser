@@ -8,6 +8,7 @@ import os
 from kivy.graphics.vertex_instructions import Rectangle
 from kivy.graphics import Color
 from kivy.core.image import Image
+import kivy.metrics as metrics
 
 from kivy.properties import StringProperty,\
                             ListProperty,\
@@ -20,6 +21,7 @@ from kivy.graphics.instructions import InstructionGroup
 from analyser_util import channelIndexFromName 
 from PIL import Image as PILImage
 from PIL.ImageStat import Stat as imageStat
+import math
 
 class ColorReaderSpot(object):
     def __init__(self, idNo = None, type='std', conc=0.0):
@@ -34,27 +36,35 @@ class ColorReaderSpot(object):
         self.A = None
         self.spotColor = Color(1, 0, 0, 0.5)
         self.blankSpotColor = Color(0, 0, 0, 0.25)
+        self.alpha = None
+        self.exclude = False
 
 
     def updateText(self):
+        channelIndex = channelIndexFromName(App.get_running_app().measuredChannel)
         assert self.type in ['std', 'sample']
         if self.type == 'std' and self.conc is not None:
             typeText = 'Std ' + str(self.conc)
         elif self.type == 'sample':
             typeText = 'Sample {0}-{1}'.format(self.sampleGrp, self.idNo)
-        if self.colorVal is not None:
+        if self.colorVal and self.blankVal is not None:
+            self.alpha = -math.log10(self.colorVal[0] / self.blankVal)
             if self.colorMode == 'RGB':
                 print 'spot color type is RGB'
-                lStr = ('[b]{0}[/b]\nR: {1:03.0f}   G: {2:03.0f}   B: {3:03.0f}')
-                text = lStr.format(typeText, self.colorVal[0],
-                                        self.colorVal[1], self.colorVal[2])
-            elif self.colorMode == 'RGBA':
-                print 'spot colr type is RGBA'
-                lStr = ('[b]{0}[/b]\nR: {1:03.0f}   '
-                        'G: {2:03.0f}   B: {3:03.0f}   A: {4:03.0f}')
+                lStr = ('[b]{0}[/b]\n'
+                        'R: {1:03.0f}   G: {2:03.0f}   B: {3:03.0f}\n'
+                        u'Blank: {4:03.0f}  \u03b1: {5:05.3f}')
                 text = lStr.format(typeText, self.colorVal[0],
                                    self.colorVal[1], self.colorVal[2],
-                                   self.colorVal[3])
+                                   self.blankVal, self.alpha)
+            elif self.colorMode == 'RGBA':
+                lStr = (u'[b]{0}[/b]\n'
+                         'R: {1:03.0f}   G: {2:03.0f}   B: {3:03.0f}   A: {4:03.0f}\n'
+                         'Blank: {4:03.0f}  \u03b1: {5:05.3f}')
+                text = lStr.format(typeText, self.colorVal[0],
+                                   self.colorVal[1], self.colorVal[2],
+                                   self.colorVal[3],
+                                   self.blankVal, self.alpha)
             elif self.colorMode is None:
                 print 'programming error color mode not set'
                 text = 'color mode not set'
@@ -72,15 +82,17 @@ class ColorReaderSpot(object):
         self.instGrp.add(Rectangle(size=(size, size), pos=(X, Y)))
 
                 
-    def addBlankSpots(self, offset=60):
-        size = self.instGrp.children[2].size[0]
-        x = self.instGrp.children[2].pos[0]
-        y = self.instGrp.children[2].pos[1]
+    def addBlankSpots(self, size=2.5):
+        self.instGrp.children = self.instGrp.children[:3]
+        size = metrics.dp(size)
+        mainSize = self.instGrp.children[2].size[0]
+        x = self.instGrp.children[2].pos[0] + mainSize / 2 - size / 2
+        y = self.instGrp.children[2].pos[1] + mainSize / 2 - size / 2
         self.instGrp.add(self.blankSpotColor)
-        self.instGrp.add(Rectangle(size=(size, size), pos=(x + offset, y + offset)))
-        self.instGrp.add(Rectangle(size=(size, size), pos=(x + offset, y - offset)))
-        self.instGrp.add(Rectangle(size=(size, size), pos=(x - offset, y + offset)))
-        self.instGrp.add(Rectangle(size=(size, size), pos=(x - offset, y - offset)))
+        self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
+        self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
+        self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
+        self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
 
 
 class ColorReader(Widget):
@@ -131,6 +143,7 @@ class ColorReader(Widget):
             self.canvas.add(spot.instGrp)
         self.analysisImage = None
         self.currentSpot = self.spots[0]
+        self.app = App.get_running_app()
         
 
     def initialDraw(self):
@@ -149,7 +162,8 @@ class ColorReader(Widget):
                     spot.type = self.currentSpotType
                     spot.conc = self.currentSpotConc
                 self.readSpot(self.analysisImage, spot)
-                self.readBlankSpots(self.analysisImage, spot)
+                spot.addBlankSpots()
+                self.scanBlankSpots(self.analysisImage, spot)
                 buttonStr = spot.updateText()
                 self.spotButtonText[spot.idNo - 1] = buttonStr 
 
@@ -164,15 +178,19 @@ class ColorReader(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             print 'called on_touch_down'
-            size = self.currentSpotSize
-            self.currentSpot.addMainSpot(size, touch.x - size / 2, touch.y - size / 2)
+            size = metrics.dp(self.currentSpotSize)
+            self.currentSpot.addMainSpot(size,
+                                         touch.x - size / 2,
+                                         touch.y - size / 2)
 
 
     def on_touch_move(self, touch):
         if self.collide_point(*touch.pos):
             print 'called on_touch_move'
-            size = self.currentSpotSize
-            self.currentSpot.addMainSpot(size, touch.x - size / 2, touch.y - size / 2)
+            size = metrics.dp(self.currentSpotSize)
+            self.currentSpot.addMainSpot(size,
+                                         touch.x - size / 2,
+                                         touch.y - size / 2)
 
  
     def on_touch_up(self, touch):
@@ -183,7 +201,7 @@ class ColorReader(Widget):
             self.currentSpot.addBlankSpots()
             self.readSpot(self.analysisImage, self.currentSpot)
             self.readSpot(self.analysisImage, self.currentSpot)
-            self.readBlankSpots(self.analysisImage, self.currentSpot)
+            self.scanBlankSpots(self.analysisImage, self.currentSpot)
             buttonStr = self.currentSpot.updateText()
             self.spotButtonText[self.currentSpot.idNo - 1] = buttonStr
 
@@ -197,23 +215,25 @@ class ColorReader(Widget):
 
     def stopMoveBox(self):
         Clock.unschedule(self.moveBox)
-    
+
 
     def scanAllSpots(self, channel):
         for spot in self.spots:
             self.scanRegion(spot, channel)
 
-    
+
     def scanRegion(self, spot, channel):
-        scanRangeLow = 60
-        scanResLow = 10
-        scanRangeHigh = 10
-        scanResHigh = 1
+        scanRangeLow = int(metrics.dp(15))
+        scanResLow = int(metrics.dp(5))
+        scanRangeHigh = int(metrics.dp(2.5))
+        scanResHigh = int(metrics.dp(1))
         channelIndex = channelIndexFromName(channel)
         checkedSpots = []
         pos = spot.instGrp.children[2].pos
-        for x in range(int(pos[0] - scanRangeLow), int(pos[0] + scanRangeLow), scanResLow):
-            for y in range(int(pos[1] - scanRangeLow), int(pos[1] + scanRangeLow), scanResLow):
+        for x in range(int(pos[0] - scanRangeLow),
+                       int(pos[0] + scanRangeLow), scanResLow):
+            for y in range(int(pos[1] - scanRangeLow),
+                           int(pos[1] + scanRangeLow), scanResLow):
                 spot.instGrp.children[2].pos = (x, y)
                 self.readSpot(self.analysisImage, spot)
                 checkedSpots.append((spot.colorVal[channelIndex], x, y))
@@ -221,8 +241,10 @@ class ColorReader(Widget):
         pos = (posGrp[1], posGrp[2])
         checkedSpots = []
         print 'low', pos
-        for x in range(int(pos[0] - scanRangeHigh), int(pos[0] + scanRangeHigh), scanResHigh):
-            for y in range(int(pos[1] - scanRangeHigh), int(pos[1] + scanRangeHigh), scanResHigh):
+        for x in range(int(pos[0] - scanRangeHigh),
+                       int(pos[0] + scanRangeHigh), scanResHigh):
+            for y in range(int(pos[1] - scanRangeHigh),
+                           int(pos[1] + scanRangeHigh), scanResHigh):
                 spot.instGrp.children[2].pos = (x, y)
                 self.readSpot(self.analysisImage, spot)
                 checkedSpots.append((spot.colorVal[channelIndex], x, y))
@@ -233,7 +255,9 @@ class ColorReader(Widget):
         spot.addMainSpot(size, pos[0], pos[1])
         spot.addBlankSpots()
         self.readSpot(self.analysisImage, spot)
-        self.readBlankSpots(self.analysisImage, spot)
+        self.scanBlankSpots(self.analysisImage, spot)
+        buttonStr = spot.updateText()
+        self.spotButtonText[spot.idNo - 1] = buttonStr 
 
 
     def moveBox(self, *args):
@@ -245,7 +269,7 @@ class ColorReader(Widget):
             if str(type(x)) == "<type 'kivy.graphics.vertex_instructions.Rectangle'>":
                 x.pos = (x.pos[0] + horiz, x.pos[1] + vert)
         self.readSpot(self.analysisImage, self.currentSpot)
-        self.readBlankSpots(self.analysisImage, self.currentSpot)
+        self.scanBlankSpots(self.analysisImage, self.currentSpot)
         buttonStr = self.currentSpot.updateText()
         self.spotButtonText[self.currentSpot.idNo - 1] = buttonStr
 
@@ -256,8 +280,8 @@ class ColorReader(Widget):
         spotY = spot.instGrp.children[2].pos[1]
         scaled_x = int((spotX - self.x) * (image.size[0] / float(self.width)))
         scaled_y = int((spotY - self.y) * (image.size[1] / float(self.height)))
-        scaled_spotWidth = int(spotSize * (image.size[0] / float(self.width)))
-        scaled_spotHeight = int(spotSize * (image.size[1] / float(self.height)))
+        scaled_spotWidth = max(int(spotSize * (image.size[0] / float(self.width))), 1)
+        scaled_spotHeight = max(int(spotSize * (image.size[1] / float(self.height))), 1)
         croppedImage = image.crop((scaled_x, scaled_y,
                                    scaled_x + scaled_spotWidth,
                                    scaled_y + scaled_spotHeight))
@@ -266,26 +290,52 @@ class ColorReader(Widget):
         spot.colorMode = image.mode
 
 
-    def readBlankSpots(self, image, spot):
-        aveBlank = None
-        for i in [5, 7, 9, 11]:
-            spotSize = spot.instGrp.children[i].size[0]
-            spotX = spot.instGrp.children[i].pos[0]
-            spotY = spot.instGrp.children[i].pos[1]
-            scaled_x = int((spotX - self.x) * (image.size[0] / float(self.width)))
-            scaled_y = int((spotY - self.y) * (image.size[1] / float(self.height)))
-            scaled_spotWidth = int(spotSize * (image.size[0] / float(self.width)))
-            scaled_spotHeight = int(spotSize * (image.size[1] / float(self.height)))
-            croppedImage = image.crop((scaled_x, scaled_y,
-                                       scaled_x + scaled_spotWidth,
-                                       scaled_y + scaled_spotHeight))
-            color = imageStat(croppedImage).mean
-            if aveBlank is None:
-                aveBlank = [0] * len(color)
-            for i in range(len(color)):
-                aveBlank[i] += color[i] / 4
-        spot.blankVal = aveBlank
+    def scanBlankSpots(self, image, spot, scanRange=30):
+        scanRange = int(metrics.dp(scanRange))
+        channelIndex = channelIndexFromName(self.app.measuredChannel)
+        maxValList = []
+        for i in [(5, -1, 0), (7, 0, 1), (9, 1, 0), (11, 0, -1)]:
+            colorValsList = []
+            spotSize = spot.instGrp.children[i[0]].size[0]
+            scaled_spotWidth = max(int(spotSize * (image.size[0] / float(self.width))), 1)
+            scaled_spotHeight = max(int(spotSize * (image.size[1] / float(self.height))), 1)
+            # low res scan
+            for j in range(0, scanRange, int(scanRange / 5)):
+                spotX = spot.instGrp.children[i[0]].pos[0] + j * i[1]
+                spotY = spot.instGrp.children[i[0]].pos[1] + j * i[2]
+                scaled_x = int((spotX - self.x) * (image.size[0] / float(self.width)))
+                scaled_y = int((spotY - self.y) * (image.size[1] / float(self.height)))
+                croppedImage = image.crop((scaled_x, scaled_y,
+                                           scaled_x + scaled_spotWidth,
+                                           scaled_y + scaled_spotHeight))
+                colorValsList.append((imageStat(croppedImage).mean[channelIndex], spotX, spotY))
+            maxVal = max(colorValsList)
+            print maxVal
+            maxValList.append(maxVal[0])
+            spot.instGrp.children[i[0]].pos = (maxVal[1], maxVal[2])
+
+            # high res scan
+            for j in range(6):
+                spotX = spot.instGrp.children[i[0]].pos[0] - 3+ j * i[1]
+                spotY = spot.instGrp.children[i[0]].pos[1] -3 + j * i[2]
+                scaled_x = int((spotX - self.x) * (image.size[0] / float(self.width)))
+                scaled_y = int((spotY - self.y) * (image.size[1] / float(self.height)))
+                croppedImage = image.crop((scaled_x, scaled_y,
+                                           scaled_x + scaled_spotWidth,
+                                           scaled_y + scaled_spotHeight))
+                colorValsList.append((imageStat(croppedImage).mean[channelIndex], spotX, spotY))
+            maxVal = max(colorValsList)
+            print maxVal
+            maxValList.append(maxVal[0])
+            spot.instGrp.children[i[0]].pos = (maxVal[1], maxVal[2])
+        spot.blankVal = sum(maxValList) / len(maxValList)
         print 'ave blank', spot.blankVal
+
+
+    def updateSpotConc(self, spot, conc):
+        spot.conc = conc
+        buttonStr = spot.updateText()
+        self.spotButtonText[spot.idNo - 1] = buttonStr 
 
 
 class CalibrationScreen(Widget):

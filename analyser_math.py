@@ -6,12 +6,14 @@ from analyser_util import channelIndexFromName
 
 
 class CalcLogger(object):
-    def __init__(self, mode='print', fileName=''):
+    def __init__(self, mode='print', fileName='', newFile=False):
         self.mode = mode
         if mode == 'log':
             if file == '':
                 raise RuntimeError('fileName is required argument'
                                    'for log mode')
+            elif newFile:
+                self.f = open(fileName, 'wb')
             else:
                 self.f = open(fileName, 'ab')
         elif mode != 'print':
@@ -26,8 +28,11 @@ class CalcLogger(object):
 
 
 def calculateConc(calib, alpha):
-    result = (alpha - calib.C) / calib.M
-    return result
+    if calib is None:
+        return None
+    else:
+        result = (alpha - calib.C) / calib.M
+        return result
 
 
 def readQConf(N, conf, qConfCSV):
@@ -42,7 +47,7 @@ def readQConf(N, conf, qConfCSV):
 
 
 def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
-    log = CalcLogger('print', calcLog).log
+    log = CalcLogger('log', calcLog, newFile=True).log
     channelIndex = channelIndexFromName(measuredChannel)
     alphaAverageDict = {}
     concSet = set()
@@ -54,7 +59,6 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
     while concSet:
         spotConcDict[concSet.pop()] = []
     for spot in spots:
-        spot.exclude = False
         spotConcDict[spot.conc].append(spot)
 
     for conc in spotConcDict:
@@ -64,17 +68,17 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
         log(u'ID    Color Val     Blank Val     \u03b1')
         for spot in spotConcDict[conc]:
             spot.alpha = -math.log(spot.colorVal[channelIndex]/
-                                   spot.blankVal[channelIndex])
+                                   spot.blankVal)
             log('{0: <2}    {1:9.3f}   {2:9.3f}    {3:9.3f}'.format(spot.idNo,
                                               spot.colorVal[channelIndex],
-                                              spot.blankVal[channelIndex],
+                                              spot.blankVal,
                                               spot.alpha))
         spotConcDict[conc].sort(key=lambda spot: spot.alpha)
         
-        if len(spotConcDict[conc]) > 2:
+        if len(spotConcDict[conc]) > 10:
+            percentileTest(spotConcDict[conc], log)
+        elif len(spotConcDict[conc]) > 2:
             qTest(spotConcDict[conc], qConfCSV, CL, log)
-        elif len(spotConcDict[conc]) > 10:
-            percentileTest(spots, log)
 
         valCount = 0
         valSum = 0.0
@@ -93,6 +97,8 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
     # Make calibration curve
     N = len(calibPoints)
     if N < 2:
+        log('Not enough different calibration '
+            'concentrations to calculate curve')
         return None
     else:
         log('Calculating LSR')
@@ -136,7 +142,7 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
 
 
 def writeRawData(calib, rawFile, spots, measuredChannel, firstWrite=False):
-    channelIndex = channelIndexFromName(calib.channel)
+    channelIndex = channelIndexFromName(measuredChannel)
     fieldNames = ['type', 'sample_group', 'sample_no',
                   'known_concentration', 'calculated_concentration',
                   'red','green', 'blue', 'alpha', 'measured_channel']
@@ -157,7 +163,11 @@ def writeRawData(calib, rawFile, spots, measuredChannel, firstWrite=False):
                 conc = ''
                 sample_group = spot.sampleGrp
                 sample_no = spot.idNo
+            spot.alpha = -math.log(spot.colorVal[channelIndex]/
+                                   spot.blankVal)
             calculatedConc = calculateConc(calib, spot.alpha)
+            if calculatedConc is not None:
+                calculatedConc = '{:.3f}'.format(calculatedConc)
             if spot.colorMode == 'RGBA':
                 alpha = '{:.3f}'.format(spot.colorVal[3])
             else:
@@ -172,7 +182,7 @@ def writeRawData(calib, rawFile, spots, measuredChannel, firstWrite=False):
                  'blue': '{:.3f}'.format(spot.colorVal[2]),
                  'alpha': alpha,
                  'measured_channel': measuredChannel,
-                 'calculated_concentration': '{:.3f}'.format(calculatedConc)})
+                 'calculated_concentration': calculatedConc})
 
 
 def percentile(percentileNo, data):
@@ -184,7 +194,7 @@ def percentile(percentileNo, data):
 
 
 def calculateSampleConc(calib, spots, calcLog, sampleGrp, qConfCSV, CL=90):
-    log = CalcLogger('print', calcLog).log
+    log = CalcLogger('log', calcLog).log
     log('-----------------------------------------------------')
     channelIndex = channelIndexFromName(calib.channel)
 
@@ -197,22 +207,23 @@ def calculateSampleConc(calib, spots, calcLog, sampleGrp, qConfCSV, CL=90):
     log(u'ID    Color Val     Blank Val     \u03b1')
     alphaList = []
     for spot in spots:
+        spot.exclude = False
         spot.alpha = -math.log(spot.colorVal[channelIndex]/
-                               spot.blankVal[channelIndex])
+                               spot.blankVal)
         log(('{0: <2}  {1:9.3f}    {2:9.3f}  {3:9.3f}'
              ).format(spot.idNo,
                      spot.colorVal[channelIndex],
-                     spot.blankVal[channelIndex],
+                     spot.blankVal,
                      spot.alpha))
         
-    if len(spotConcDict[conc]) > 2:
-        qTest(spotConcDict[conc], qConfCSV, CL, log)
-    elif len(spotConcDict[conc]) > 10:
+    if len(spots) > 10:
         percentileTest(spots, log)
+    elif len(spots) > 2:
+        qTest(spots, qConfCSV, CL, log)
 
     valCount = 0
     valSum = 0.0
-    for spot in spotConcDict[conc]:
+    for spot in spots:
         if spot.exclude is False:
             valCount += 1
             valSum += spot.alpha
@@ -311,6 +322,6 @@ def percentileTest(spots, logger=None):
     log('90th percentile: {}'.format(nintyP))
 
     for spot in spots:
-        if val < tenP or val > nintyP:
-            spot.exclude
-            log('excluding {}'.format(val))
+        if spot.alpha < tenP or spot.alpha > nintyP:
+            spot.exclude = True
+            log('excluding {}'.format(spot.alpha))

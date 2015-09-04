@@ -1,0 +1,21 @@
+[
+    {
+        "type": "options",
+        "title": "Measured Channel",
+        "section": "technical",
+        "key": "measuredChannel",
+        "options": ["Red", "Green", "Blue"]
+    },
+    {
+        "type": "numeric",
+        "title": "Spot Size",
+        "section": "technical",
+        "key": "spotSize"
+    },
+    {
+        "type": "string",
+        "title": "Email Address",
+        "section": "email",
+        "key": "address"
+    }
+]

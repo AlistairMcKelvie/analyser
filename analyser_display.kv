@@ -5,7 +5,11 @@
         Label:
             text: 'Spot No.'
         Label:
+            text: 'Concentration'
+        Label:
             text: 'Color Value'
+        Label:
+            text: 'Blank Value'
         Label:
             text: u'\u03b1'   
     ScrollView:
@@ -22,10 +26,14 @@
     BoxLayout:
         size_hint_y: 0.1
         Button:
-            text: 'Add to calibration'
+            text: 'Get more calibration values'
+            on_release:
+                app.targetReaderScreen = 'calib'
+                app.goto_image_menu()
         Button:
             text: 'Get Sample'
-            on_release: app.goto_image_menu()
+            on_release:
+                if app.calib is not None:app.targetReaderScreen = 'sample';app.goto_image_menu()
 
 <SampleResultsScreen>
     orientation: 'vertical'
@@ -33,8 +41,6 @@
         size_hint_y: 0.075
         Label:
             text: 'Spot No.'
-        Label:
-            text: 'Stated Concentration'
         Label:
             text: 'Color Value'
         Label:
@@ -48,7 +54,14 @@
     Label:
         size_hint_y: 0.1
         id: calcConc
-    Button:
+    BoxLayout:
         size_hint_y: 0.1
+    Button:
         text: 'Get Sample'
         on_release: app.goto_image_menu()
+    Button:
+        text: 'Get Send Email'
+        on_release: 
+            app.sendEmail()
+            app.goto_main_menu()
+    

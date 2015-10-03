@@ -81,7 +81,7 @@ class ColorReaderSpot(object):
         self.instGrp.add(self.spotColor)
         self.instGrp.add(Rectangle(size=(size, size), pos=(X, Y)))
 
-                
+
     def addBlankSpots(self, size=2.5):
         self.instGrp.children = self.instGrp.children[:3]
         size = metrics.dp(size)
@@ -167,7 +167,7 @@ class ColorReader(Widget):
                 buttonStr = spot.updateText()
                 self.spotButtonText[spot.idNo - 1] = buttonStr 
 
- 
+
     def updateSpotSize(self, spotSize):
         try:
             self.currentSpotSize = int(spotSize)
@@ -290,7 +290,7 @@ class ColorReader(Widget):
         spot.colorMode = image.mode
 
 
-    def scanBlankSpots(self, image, spot, scanRange=30):
+    def scanBlankSpots(self, image, spot, scanRange=40):
         scanRange = int(metrics.dp(scanRange))
         channelIndex = channelIndexFromName(self.app.measuredChannel)
         maxValList = []

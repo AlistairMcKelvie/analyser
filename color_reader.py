@@ -36,43 +36,48 @@ class ColorReaderSpot(object):
         self.A = None
         self.spotColor = Color(1, 0, 0, 0.5)
         self.blankSpotColor = Color(0, 0, 0, 0.25)
-        self.alpha = None
+        self.absorb = None
         self.exclude = False
 
 
     def updateText(self):
-        channelIndex = channelIndexFromName(App.get_running_app().measuredChannel)
+        self.app = App.get_running_app()
+        channelIndex = channelIndexFromName(self.app.measuredChannel)
         assert self.type in ['std', 'sample']
         if self.type == 'std' and self.conc is not None:
             typeText = 'Std ' + str(self.conc)
         elif self.type == 'sample':
             typeText = 'Sample {0}-{1}'.format(self.sampleGrp, self.idNo)
-        if self.colorVal and self.blankVal is not None:
-            self.alpha = -math.log10(self.colorVal[0] / self.blankVal)
+
+        if self.colorVal is not None:
+            text = '[b]{0}[/b]'.format(typeText)
             if self.colorMode == 'RGB':
                 print 'spot color type is RGB'
-                lStr = ('[b]{0}[/b]\n'
-                        'R: {1:03.0f}   G: {2:03.0f}   B: {3:03.0f}\n'
-                        u'Blank: {4:03.0f}  \u03b1: {5:05.3f}')
-                text = lStr.format(typeText, self.colorVal[0],
-                                   self.colorVal[1], self.colorVal[2],
-                                   self.blankVal, self.alpha)
+                lStr = '\nR: {0:03.0f}   G: {1:03.0f}   B: {2:03.0f}\n'
+                text = text + lStr.format(self.colorVal[0], self.colorVal[1],
+                                          self.colorVal[2])
             elif self.colorMode == 'RGBA':
-                lStr = (u'[b]{0}[/b]\n'
-                         'R: {1:03.0f}   G: {2:03.0f}   B: {3:03.0f}   A: {4:03.0f}\n'
-                         'Blank: {4:03.0f}  \u03b1: {5:05.3f}')
-                text = lStr.format(typeText, self.colorVal[0],
-                                   self.colorVal[1], self.colorVal[2],
-                                   self.colorVal[3],
-                                   self.blankVal, self.alpha)
+                lStr = ('\nR: {0:03.0f}   G: {1:03.0f}   '
+                        'B: {2:03.0f}   A: {3:03.0f}')
+                text = text + lStr.format(self.colorVal[0], self.colorVal[1],
+                                          self.colorVal[2], self.colorVal[3])
             elif self.colorMode is None:
                 print 'programming error color mode not set'
                 text = 'color mode not set'
             else:
                 print 'unknown color format'
                 text = 'unknown color format'
+
+            assert self.app.analysisMode in ['Blank Normalize',
+                                             'Surrounds Normalize']
+            if self.app.analysisMode == 'Blank Normalize':
+                pass
+            elif self.app.analysisMode == 'Surrounds Normalize':
+                self.absorb = -math.log10(self.colorVal[channelIndex] / blankVal)
+                lStr = '\nBlank: {4:03.0f}  Absorb: {5:05.3f}'
+                text = text + lStr.format(self.absorb, self.blankVal)
         else:
-            text = typeText
+            text = '[b]{0}[/b]'.format(typeText)
         return text
 
 
@@ -103,7 +108,7 @@ class ColorReader(Widget):
     currentSpotType = StringProperty('std')
     currentSpotSize = NumericProperty(15)
     currentSpotConc = NumericProperty(0.0)
-    
+
     text1 = StringProperty('1')
     text2 = StringProperty('2')
     text3 = StringProperty('3')
@@ -144,7 +149,7 @@ class ColorReader(Widget):
         self.analysisImage = None
         self.currentSpot = self.spots[0]
         self.app = App.get_running_app()
-        
+
 
     def initialDraw(self):
         print 'in initial draw'
@@ -162,7 +167,6 @@ class ColorReader(Widget):
                     spot.type = self.currentSpotType
                     spot.conc = self.currentSpotConc
                 self.readSpot(self.analysisImage, spot)
-                spot.addBlankSpots()
                 self.scanBlankSpots(self.analysisImage, spot)
                 buttonStr = spot.updateText()
                 self.spotButtonText[spot.idNo - 1] = buttonStr 
@@ -198,18 +202,16 @@ class ColorReader(Widget):
             print 'called on_touch_up'
             self.currentSpot.type = self.currentSpotType
             self.currentSpot.conc = self.currentSpotConc
-            self.currentSpot.addBlankSpots()
-            self.readSpot(self.analysisImage, self.currentSpot)
             self.readSpot(self.analysisImage, self.currentSpot)
             self.scanBlankSpots(self.analysisImage, self.currentSpot)
             buttonStr = self.currentSpot.updateText()
             self.spotButtonText[self.currentSpot.idNo - 1] = buttonStr
 
- 
+
     def startMoveBox(self, horiz, vert):
         self.horiz = horiz
         self.vert = vert
-        self.moveBox() 
+        self.moveBox()
         Clock.schedule_interval(self.moveBox, 0.1)
 
 
@@ -253,7 +255,6 @@ class ColorReader(Widget):
         print 'high', pos
         size = spot.instGrp.children[2].size[0]
         spot.addMainSpot(size, pos[0], pos[1])
-        spot.addBlankSpots()
         self.readSpot(self.analysisImage, spot)
         self.scanBlankSpots(self.analysisImage, spot)
         buttonStr = spot.updateText()
@@ -291,6 +292,9 @@ class ColorReader(Widget):
 
 
     def scanBlankSpots(self, image, spot, scanRange=40):
+        if self.app.analysisMode != "Surrounds Normalize":
+            return
+        spot.addBlankSpots()
         scanRange = int(metrics.dp(scanRange))
         channelIndex = channelIndexFromName(self.app.measuredChannel)
         maxValList = []

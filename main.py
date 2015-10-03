@@ -88,6 +88,7 @@ class AnalyserApp(App):
         self.calibNo = 0
         self.qConfCSV = 'Q_Crit_Vals.csv'
         self.measuredChannel = self.config.get('technical', 'measuredChannel')
+        self.analysisMode = self.config.get('technical', 'analysisMode')
         return self.mainMenuScreen
 
 
@@ -202,7 +203,7 @@ class AnalyserApp(App):
         print 'texSize', tex.size
         texRatio = texSize[0] / float(texSize[1])
         print 'texRatio', texRatio
-        
+
         if texRatio > windowRatio:
             #texture is width constrained
             width = windowSize[0] * 0.8
@@ -258,7 +259,6 @@ class AnalyserApp(App):
             spotY = self.config.get('SpotY', str(spot.idNo))
             if spotSize != 'None':
                 spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
-                spot.addBlankSpots()
 
 
     def initializeSample(self):

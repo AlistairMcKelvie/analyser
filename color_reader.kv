@@ -32,7 +32,9 @@
                 print 'len(app.calibSpots)', len(app.calibSpots)
                 app.calibSpots.extend(copy(colorReader.spots))
                 print 'len(app.calibSpots)', len(app.calibSpots)
-                app.calib = am.calculateACalibCurve(app.calibSpots, app.calcLog, app.measuredChannel, app.qConfCSV)
+                if app.analysisMode == 'Blank Normalize': app.blankVal = am.calculateBlankVal(app.calibSpots, app.measuredChannel)
+                else: app.blankVal = None
+                app.calib = am.calculateACalibCurve(app.calibSpots, app.calcLog, app.measuredChannel, app.analysisMode, app.qConfCSV, blankVal=app.blankVal)
                 app.writeCalibFile(app.calibFile, app.calib)
                 am.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, app.measuredChannel, app.firstRaw)
                 app.firstRaw = False

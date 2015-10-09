@@ -73,9 +73,9 @@ class ColorReaderSpot(object):
             if app.analysisMode == 'Blank Normalize':
                 pass
             elif app.analysisMode == 'Surrounds Normalize':
-                self.absorb = -math.log10(self.colorVal[channelIndex] / blankVal)
+                self.absorb = -math.log10(self.colorVal[channelIndex] / surroundsVal)
                 lStr = '\nBlank: {4:03.0f}  Absorb: {5:05.3f}'
-                text = text + lStr.format(self.absorb, self.blankVal)
+                text = text + lStr.format(self.absorb, self.surroundsVal)
         else:
             text = '[b]{0}[/b]'.format(typeText)
         return text
@@ -195,7 +195,7 @@ class ColorReader(Widget):
                                          touch.x - size / 2,
                                          touch.y - size / 2)
 
- 
+
     def on_touch_up(self, touch):
         if self.collide_point(*touch.pos):
             print 'called on_touch_up'
@@ -332,8 +332,8 @@ class ColorReader(Widget):
             print maxVal
             maxValList.append(maxVal[0])
             spot.instGrp.children[i[0]].pos = (maxVal[1], maxVal[2])
-        spot.blankVal = sum(maxValList) / len(maxValList)
-        print 'ave blank', spot.blankVal
+        spot.surroundsVal = sum(maxValList) / len(maxValList)
+        print 'ave blank', spot.surroundsVal
 
 
     def updateSpotConc(self, spot, conc):

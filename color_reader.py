@@ -35,7 +35,7 @@ class ColorReaderSpot(object):
         self.colorMode = None
         self.A = None
         self.spotColor = Color(1, 0, 0, 0.5)
-        self.blankSpotColor = Color(0, 0, 0, 0.25)
+        self.surroundsSpotColor = Color(0, 0, 0, 0.25)
         self.absorb = None
         self.exclude = False
 
@@ -87,7 +87,7 @@ class ColorReaderSpot(object):
         self.instGrp.add(Rectangle(size=(size, size), pos=(X, Y)))
 
 
-    def addBlankSpots(self, size=2.5):
+    def addSurrondsSpots(self, size=2.5):
         self.instGrp.children = self.instGrp.children[:3]
         size = metrics.dp(size)
         mainSize = self.instGrp.children[2].size[0]
@@ -166,7 +166,7 @@ class ColorReader(Widget):
                     spot.type = self.currentSpotType
                     spot.conc = self.currentSpotConc
                 self.readSpot(self.analysisImage, spot)
-                self.scanBlankSpots(self.analysisImage, spot)
+                self.scanSurroundsSpots(self.analysisImage, spot)
                 buttonStr = spot.updateText()
                 self.spotButtonText[spot.idNo - 1] = buttonStr 
 
@@ -202,7 +202,7 @@ class ColorReader(Widget):
             self.currentSpot.type = self.currentSpotType
             self.currentSpot.conc = self.currentSpotConc
             self.readSpot(self.analysisImage, self.currentSpot)
-            self.scanBlankSpots(self.analysisImage, self.currentSpot)
+            self.scanSurroundsSpots(self.analysisImage, self.currentSpot)
             buttonStr = self.currentSpot.updateText()
             self.spotButtonText[self.currentSpot.idNo - 1] = buttonStr
 
@@ -255,7 +255,7 @@ class ColorReader(Widget):
         size = spot.instGrp.children[2].size[0]
         spot.addMainSpot(size, pos[0], pos[1])
         self.readSpot(self.analysisImage, spot)
-        self.scanBlankSpots(self.analysisImage, spot)
+        self.scanSurroundsSpots(self.analysisImage, spot)
         buttonStr = spot.updateText()
         self.spotButtonText[spot.idNo - 1] = buttonStr 
 
@@ -269,7 +269,7 @@ class ColorReader(Widget):
             if str(type(x)) == "<type 'kivy.graphics.vertex_instructions.Rectangle'>":
                 x.pos = (x.pos[0] + horiz, x.pos[1] + vert)
         self.readSpot(self.analysisImage, self.currentSpot)
-        self.scanBlankSpots(self.analysisImage, self.currentSpot)
+        self.scanSurroundsSpots(self.analysisImage, self.currentSpot)
         buttonStr = self.currentSpot.updateText()
         self.spotButtonText[self.currentSpot.idNo - 1] = buttonStr
 
@@ -290,11 +290,11 @@ class ColorReader(Widget):
         spot.colorMode = image.mode
 
 
-    def scanBlankSpots(self, image, spot, scanRange=40):
+    def scanSurroundsSpots(self, image, spot, scanRange=40):
         app = App.get_running_app()
         if app.analysisMode != "Surrounds Normalize":
             return
-        spot.addBlankSpots()
+        spot.addSurroundsSpots()
         scanRange = int(metrics.dp(scanRange))
         channelIndex = channelIndexFromName(app.measuredChannel)
         maxValList = []

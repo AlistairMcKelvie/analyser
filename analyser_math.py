@@ -125,7 +125,7 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
         log('C = {}'.format(C))
         log(u'conc = {M}\u03b1 + {C}'.format(M=M, C=C))
         log('')
-        
+
         log(u'calculating R\u00b2')
         log(u'R\u00b2 = 1 - SSres/SStot')
         log(u'SSres = \u2211(y - f)\u00b2')

@@ -6,25 +6,23 @@ from analyser_util import channelIndexFromName
 
 
 class CalcLogger(object):
-    def __init__(self, mode='print', fileName='', newFile=False):
+    def __init__(self, mode='print', fileName=''):
+        assert mode in ['log', 'print']
         self.mode = mode
+        self.fileName = fileName
         if mode == 'log':
             if file == '':
                 raise RuntimeError('fileName is required argument'
                                    'for log mode')
-            elif newFile:
-                self.f = open(fileName, 'wb')
-            else:
-                self.f = open(fileName, 'ab')
-        elif mode != 'print':
-            raise RuntimeError('{} is not a valid log mode'.format(mode))
-
+                with open(fileName, 'wb'):
+                    pass
 
     def log(self, st):
         if self.mode == 'print':
             print st.encode('utf-8')
         else:
-            self.f.write('{}\n'.format(st.encode('utf-8')))
+            with open(self.fileName, 'ab') as wf:
+                wf.write('{}\n'.format(st.encode('utf-8')))
 
 
 def calculateConc(calib, absorb):
@@ -46,9 +44,9 @@ def readQConf(N, conf, qConfCSV):
                                'N: {}, CL: {}').format(N, conf))
 
 
-def calculateACalibCurve(spots, calcLog, measuredChannel, analysisMode,
+def calculateACalibCurve(spots, logger, measuredChannel, analysisMode,
                          qConfCSV, CL=90, blankVal=None):
-    log = CalcLogger('log', calcLog, newFile=True).log
+    log = logger.log
     channelIndex = channelIndexFromName(measuredChannel)
     absorbAverageDict = {}
     concSet = set()
@@ -65,7 +63,6 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, analysisMode,
     assert analysisMode in ['Blank Normalize', 'Surrounds Normalize']
     if analysisMode == 'Blank Normalize':
         if blankVal is None:
-            log('No blank values found')
             return None
 
     for conc in spotConcDict:
@@ -150,8 +147,8 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, analysisMode,
         return Calib(M=M, C=C, R2=R2, channel=measuredChannel)
 
 
-def calculateBlankVal(spots, measuredChannel, calcLog):
-    log = CalcLogger('log', calcLog, newFile=True).log
+def calculateBlankVal(spots, measuredChannel, logger):
+    log = logger.log
     # put lists of spots with the same conc in a dictionary
     for spot in spots:
         concSet.add(spot.conc)
@@ -165,6 +162,7 @@ def calculateBlankVal(spots, measuredChannel, calcLog):
         blankVal = sum(blanksList) / len(blanksList)
         return blankVal
     else:
+        log('No blank values found')
         return None
 
 def writeRawData(calib, rawFile, spots, measuredChannel, firstWrite=False):

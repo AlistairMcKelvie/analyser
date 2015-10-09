@@ -64,7 +64,6 @@ def calculateACalibCurve(spots, logger, measuredChannel, analysisMode,
     if analysisMode == 'Blank Normalize':
         if blankVal is None:
             return None
-
     for conc in spotConcDict:
         log(u'calculating \u03b1 values')
         log(u'\u03b1 = -log(color value/blank value)')
@@ -148,24 +147,19 @@ def calculateACalibCurve(spots, logger, measuredChannel, analysisMode,
 
 
 def calculateBlankVal(spots, measuredChannel, logger):
-    log = logger.log
-    # put lists of spots with the same conc in a dictionary
+    channelIndex = channelIndexFromName(measuredChannel)
+    blanksList = []
     for spot in spots:
-        concSet.add(spot.conc)
-    while concSet:
-        spotConcDict[concSet.pop()] = []
-    for spot in spots:
-        spotConcDict[spot.conc].append(spot)
-
-    if 0 in spotConcDict:
-        blanksList = [spot.colorVal[channelIndex] for spot in spotConcDict[0]]
+        if spot.conc == 0:
+            blanksList.append(spot.colorVal[channelIndex])
+    if len(blanksList) != 0:
         blankVal = sum(blanksList) / len(blanksList)
         return blankVal
     else:
-        log('No blank values found')
+        logger.log('No blank values found')
         return None
 
-def writeRawData(calib, rawFile, spots, measuredChannel, firstWrite=False):
+def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=None, firstWrite=False):
     channelIndex = channelIndexFromName(measuredChannel)
     fieldNames = ['type', 'sample_group', 'sample_no',
                   'known_concentration', 'calculated_concentration',
@@ -174,6 +168,12 @@ def writeRawData(calib, rawFile, spots, measuredChannel, firstWrite=False):
         with open(rawFile, 'wb') as sFile:
             csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
             csvWriter.writeheader()
+
+    assert analysisMode in ['Blank Normalize', 'Surrounds Normalize']
+    if analysisMode == 'Blank Normalize':
+        if blankVal is None:
+            return
+
     with open(rawFile, 'ab') as sFile:
         csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
         for spot in spots:
@@ -187,6 +187,10 @@ def writeRawData(calib, rawFile, spots, measuredChannel, firstWrite=False):
                 conc = ''
                 sample_group = spot.sampleGrp
                 sample_no = spot.idNo
+            if analysisMode == 'Surrounds Normalize':
+                blankVal = spot.surroundsVal
+            spot.absorb = -math.log(spot.colorVal[channelIndex]/
+                                    blankVal)
             calculatedConc = calculateConc(calib, spot.absorb)
             if calculatedConc is not None:
                 calculatedConc = '{:.3f}'.format(calculatedConc)
@@ -210,15 +214,19 @@ def percentile(percentileNo, data):
     return result
 
 
-def calculateSampleConc(calib, spots, analysisMode, calcLog, sampleGrp,
+def calculateSampleConc(calib, spots, analysisMode, logger, sampleGrp,
                         qConfCSV, CL=90, blankVal=None):
-    log = CalcLogger('log', calcLog).log
+    log = logger.log
     log('-----------------------------------------------------')
     channelIndex = channelIndexFromName(calib.channel)
-
     # check sample grp
     for spot in spots:
         assert sampleGrp is None or spot.sampleGrp == sampleGrp
+
+    assert analysisMode in ['Blank Normalize', 'Surrounds Normalize']
+    if analysisMode == 'Blank Normalize':
+        if blankVal is None:
+            return None
     log('sample group: {}'.format(sampleGrp))
     log(u'calculating \u03b1 values')
     log(u'\u03b1 = -log(color value/blank value)')
@@ -226,12 +234,14 @@ def calculateSampleConc(calib, spots, analysisMode, calcLog, sampleGrp,
     absorbList = []
     for spot in spots:
         spot.exclude = False
+        if analysisMode == 'Surrounds Normalize':
+            blankVal = spot.surroundsVal
         spot.absorb = -math.log(spot.colorVal[channelIndex]/
-                               blankVal)
+                                blankVal)
         log(('{0: <2}  {1:9.3f}    {2:9.3f}  {3:9.3f}'
              ).format(spot.idNo,
                      spot.colorVal[channelIndex],
-                     spot.blankVal,
+                     blankVal,
                      spot.absorb))
 
     if len(spots) > 10:
@@ -281,7 +291,7 @@ def qTest(spots, qConfCSV, CL, logger=None):
     valRange = highestVal - lowestVal
     log('range is {}'.format(valRange))
 
-    secondLowest = spots[1].abbsorb
+    secondLowest = spots[1].absorb
     qValLow = (secondLowest - lowestVal) / valRange 
     log(('Q-value for lowest is ({0} - {1})/{2} = {3}'
          ).format(secondLowest, lowestVal, valRange, qValLow))

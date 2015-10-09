@@ -105,16 +105,21 @@ class AnalyserApp(App):
             calibGraph.drawCurve(self.calib)
         colorIndex = channelIndexFromName(self.measuredChannel) 
         valuesTable.clear_widgets()
+        assert self.analysisMode in ['Blank Normalize', 'Surrounds Normalize']
+        if self.analysisMode == 'Blank Normalize':
+            blankVal = self.blankVal
         for spot in self.calibSpots:
             row = BoxLayout()
             valuesTable.add_widget(row)
             row.add_widget(Label(text=str(spot.idNo), font_size=metrics.dp(15)))
             row.add_widget(Label(text=str(spot.conc), font_size=metrics.dp(15)))
             row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex]))),
+                                 font_size=metrics.dp(15)))
+            if self.analysisMode == 'Surrounds Normalize':
+                blankVal = spot.surroundsVal
+            row.add_widget(Label(text=str(int(round(blankVal))),
                                 font_size=metrics.dp(15)))
-            row.add_widget(Label(text=str(int(round(spot.blankVal))),
-                                font_size=metrics.dp(15)))
-            row.add_widget(Label(text='{:.3f}'.format(spot.alpha),
+            row.add_widget(Label(text='{:.3f}'.format(spot.absorb),
                                  font_size=metrics.dp(15)))
         valuesTable.height = len(self.calibSpots) * metrics.dp(20)
 
@@ -139,7 +144,7 @@ class AnalyserApp(App):
             row.add_widget(Label(text=str(spot.idNo), font_size=metrics.dp(15)))
             row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex]))),
                                  font_size=metrics.dp(15)))
-            row.add_widget(Label(text='{:.3f}'.format(spot.alpha),
+            row.add_widget(Label(text='{:.3f}'.format(spot.absorb),
                                  font_size=metrics.dp(15)))
         valuesTable.height = len(spots) * metrics.dp(20)
 
@@ -274,7 +279,6 @@ class AnalyserApp(App):
             spotY = self.config.get('SpotY', str(spot.idNo))
             if spotSize != 'None':
                 spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
-                spot.addBlankSpots()
 
 
     def writeSpotsToConfig(self):

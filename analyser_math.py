@@ -18,8 +18,8 @@ class CalcLogger(object):
                 self.f = open(fileName, 'ab')
         elif mode != 'print':
             raise RuntimeError('{} is not a valid log mode'.format(mode))
-    
-    
+
+
     def log(self, st):
         if self.mode == 'print':
             print st.encode('utf-8')
@@ -74,7 +74,7 @@ def calculateACalibCurve(spots, calcLog, measuredChannel, qConfCSV, CL=90):
                                               spot.blankVal,
                                               spot.alpha))
         spotConcDict[conc].sort(key=lambda spot: spot.alpha)
-        
+
         if len(spotConcDict[conc]) > 10:
             percentileTest(spotConcDict[conc], log)
         elif len(spotConcDict[conc]) > 2:

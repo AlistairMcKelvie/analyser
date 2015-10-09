@@ -41,8 +41,8 @@ class ColorReaderSpot(object):
 
 
     def updateText(self):
-        self.app = App.get_running_app()
-        channelIndex = channelIndexFromName(self.app.measuredChannel)
+        app = App.get_running_app()
+        channelIndex = channelIndexFromName(app.measuredChannel)
         assert self.type in ['std', 'sample']
         if self.type == 'std' and self.conc is not None:
             typeText = 'Std ' + str(self.conc)
@@ -68,11 +68,11 @@ class ColorReaderSpot(object):
                 print 'unknown color format'
                 text = 'unknown color format'
 
-            assert self.app.analysisMode in ['Blank Normalize',
-                                             'Surrounds Normalize']
-            if self.app.analysisMode == 'Blank Normalize':
+            assert app.analysisMode in ['Blank Normalize',
+                                        'Surrounds Normalize']
+            if app.analysisMode == 'Blank Normalize':
                 pass
-            elif self.app.analysisMode == 'Surrounds Normalize':
+            elif app.analysisMode == 'Surrounds Normalize':
                 self.absorb = -math.log10(self.colorVal[channelIndex] / blankVal)
                 lStr = '\nBlank: {4:03.0f}  Absorb: {5:05.3f}'
                 text = text + lStr.format(self.absorb, self.blankVal)
@@ -148,7 +148,6 @@ class ColorReader(Widget):
             self.canvas.add(spot.instGrp)
         self.analysisImage = None
         self.currentSpot = self.spots[0]
-        self.app = App.get_running_app()
 
 
     def initialDraw(self):
@@ -292,11 +291,12 @@ class ColorReader(Widget):
 
 
     def scanBlankSpots(self, image, spot, scanRange=40):
-        if self.app.analysisMode != "Surrounds Normalize":
+        app = App.get_running_app()
+        if app.analysisMode != "Surrounds Normalize":
             return
         spot.addBlankSpots()
         scanRange = int(metrics.dp(scanRange))
-        channelIndex = channelIndexFromName(self.app.measuredChannel)
+        channelIndex = channelIndexFromName(app.measuredChannel)
         maxValList = []
         for i in [(5, -1, 0), (7, 0, 1), (9, 1, 0), (11, 0, -1)]:
             colorValsList = []

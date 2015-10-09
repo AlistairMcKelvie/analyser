@@ -317,7 +317,7 @@ class AnalyserApp(App):
         config.setdefaults('SpotSizes', noneDict)
         config.setdefaults('SpotX', noneDict)
         config.setdefaults('SpotY', noneDict)
- 
+
 
     def sendEmail(self):
         sendMail([self.config.get('email', 'address')],

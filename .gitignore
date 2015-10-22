@@ -1,2 +1,4 @@
 *.pyc
-
+*.jpg
+analyser.ini
+bin

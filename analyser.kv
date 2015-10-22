@@ -1,4 +1,5 @@
 #:import os os
+#:import util analyser_util
 <MainMenuScreen>:
     orientation: 'vertical'
     Button:
@@ -38,8 +39,10 @@
         halign: 'center'
         valign: 'middle'
         on_release:
-            if app.targetReaderScreen == 'calib':app.take_photo(app.targetReaderScreen, calibNo=app.calibNo)
-            else:app.take_photo(app.targetReaderScreen, sampleGrp=app.sampleScreen.ids['colorReader'].spots[0].sampleGrp)
+            if app.targetReaderScreen == 'calib':filepath=app.writeDir+'calib_{}.jpg'.format(app.calibNo)
+            else:filepath = self.writeDir + 'sample_{}.jpg'.format(app.sampleScreen.ids['colorReader'].spots[0].sampleGrp)
+            app.takenPhoto = filepath
+            util.take_photo(filepath)
     Button:
         text: 'Get Stock Image'
         text_size: self.size

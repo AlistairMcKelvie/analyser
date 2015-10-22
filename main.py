@@ -15,7 +15,6 @@ from kivy.properties import StringProperty, OptionProperty, ListProperty
 from kivy.lang import Builder
 from kivy import platform
 from kivy.clock import Clock
-from plyer import camera
 import kivy.metrics as metrics
 
 from PIL import Image as PILImage
@@ -176,7 +175,7 @@ class AnalyserApp(App):
         Window.add_widget(self.calibChooserScreen)
 
 
-    def goto_color_reader_screen(self, imageFile):
+    def goto_color_reader_screen(self, imageFile, *args):
         print 'in color reader'
         assert '.jpg' in imageFile or '.png' in imageFile,\
             imageFile + ' not a valid image file, must be jpg or png'
@@ -337,36 +336,6 @@ class AnalyserApp(App):
             Window.remove_widget(widget)
 
 
-    def take_photo(self, fileType, calibNo=1, sampleGrp=1):
-        assert fileType == 'calib' or fileType == 'sample'
-        print 'fileType', fileType
-        if fileType == 'calib':
-            filepath = self.writeDir + 'calib_{}.jpg'.format(calibNo)
-        else:
-            filepath = self.writeDir + 'sample_{}.jpg'.format(sampleGrp)
-        self.cameraFile = filepath
-        print 'filePath', filepath
-        try:
-            print 'taking picture'
-            self.takenPhoto = filepath
-            camera.take_picture(filepath, self.camera_callback)
-        except NotImplementedError:
-            popup = MsgPopup(msg="This feature has not yet been "
-                                 "implemented for this platform.")
-            popup.open()
-
-
-    def camera_callback(self, imageFile, **kwargs):
-        print 'got camera callback'
-        PILImage.open(imageFile).resize((800,600)).save(imageFile)
-        Clock.schedule_once(self.new_photo_callback, 0.3)
-        return False
-
-
-    def new_photo_callback(self, dt):
-        self.goto_color_reader_screen(self.cameraFile)
-
-
     def build_settings(self, settings):
         settings.add_json_panel('Settings', self.config, 'settings.json')
 
@@ -432,7 +401,7 @@ class AnalyserApp(App):
 
 
     def on_resume(self):
-        pass 
+        pass
 
 
 class MsgPopup(Popup):

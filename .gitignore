@@ -2,3 +2,7 @@
 *.jpg
 analyser.ini
 bin
+*.swp
+.buildozer/android
+.buildozer/venv
+.DS_Store

@@ -36,7 +36,7 @@
                 if app.analysisMode == 'Blank Normalize': app.blankVal = am.calculateBlankVal(app.calibSpots, app.measuredChannel, app.logger)
                 else: app.blankVal = None
                 app.calib = am.calculateACalibCurve(app.calibSpots, app.logger, app.measuredChannel, app.analysisMode, app.qConfCSV, blankVal=app.blankVal)
-                app.writeCalibFile(app.calibFile, app.calib)
+                am.writeCalibFile(app.calibFile, app.calib)
                 am.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, app.measuredChannel, app.analysisMode, app.blankVal, app.firstRaw)
                 app.firstRaw = False
                 app.goto_calib_results()

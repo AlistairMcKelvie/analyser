@@ -14,7 +14,7 @@
         valign: 'middle'
         on_release:
             app.targetReaderScreen = 'calib'
-            app.writeDir = app.create_new_data_set()
+            app.writeDir = util.create_new_data_set(app.user_data_dir)
             app.rawFile = app.writeDir + 'raw.csv'
             app.calibFile = app.writeDir + 'calib.txt'
             app.samplesFile = app.writeDir + 'samples.csv'
@@ -41,7 +41,7 @@
         valign: 'middle'
         on_release:
             if app.targetReaderScreen == 'calib':filepath=app.writeDir+'calib_{}.jpg'.format(app.calibNo)
-            else:filepath = self.writeDir + 'sample_{}.jpg'.format(app.sampleScreen.ids['colorReader'].spots[0].sampleGrp)
+            else:filepath = app.writeDir + 'sample_{}.jpg'.format(app.sampleScreen.ids['colorReader'].spots[0].sampleGrp)
             app.takenPhoto = filepath
             util.take_photo(filepath)
     Button:
@@ -70,7 +70,7 @@
                 id: selectButton
                 text: 'Load'
                 on_release:
-                    app.calib = app.readCalibFile(calibChooser.selection[0])
+                    app.calib = am.readCalibFile(calibChooser.selection[0])
                     app.writeDir = os.path.dirname(calibChooser.selection[0]) + '/'
                     app.rawFile = app.writeDir + 'raw.csv'
                     app.calibFile = app.writeDir + 'calib.txt'

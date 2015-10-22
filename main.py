@@ -6,7 +6,6 @@ from kivy.core.image import Image
 
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 
 from kivy.graphics.vertex_instructions import Rectangle
@@ -14,10 +13,8 @@ from kivy.graphics import Color
 from kivy.properties import StringProperty, OptionProperty, ListProperty
 from kivy.lang import Builder
 from kivy import platform
-from kivy.clock import Clock
 import kivy.metrics as metrics
 
-from PIL import Image as PILImage
 
 import os
 import csv
@@ -31,7 +28,6 @@ from analyser_display import CalibResultsScreen,\
                              SampleResultsScreen
 from analyser_util import channelIndexFromName 
 from sendGmail import sendMail
-from datetime import datetime
 import shutil
 
 
@@ -355,59 +351,12 @@ class AnalyserApp(App):
                                                     'analysisMode')
 
 
-    def writeCalibFile(self, calibFile, calib):
-        if calib is not None:
-            with open(calibFile, 'wb') as f:
-                f.write('M: {}\n'.format(calib.M))
-                f.write('C: {}\n'.format(calib.C))
-                f.write('R2: {}\n'.format(calib.R2))
-                f.write('Channel: {}\n'.format(calib.channel))
-
-
-    def readCalibFile(self, calibFile):
-        with open(calibFile, 'r') as f:
-            M = f.next().split()[1]
-            C = f.next().split()[1]
-            R2 = f.next().split()[1]
-            measuredChannel = f.next().split()[1]
-        Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'channel'])
-        return Calib(M=M, C=C, R2=R2, channel=measuredChannel)
-
-
-    def create_new_data_set(self):
-        setDataDir = '{0}/{1:%Y%m%d_%H:%M}/'.format(self.user_data_dir,
-                                                    datetime.now())
-        # TODO handle data error if dir already exists
-        try:
-            os.mkdir(setDataDir)
-        except OSError:
-            setDataDir = '{0}/{1:%Y%m%d_%H:%M:%S}/'.format(self.user_data_dir,
-                                                           datetime.now())
-            os.mkdir(setDataDir)
-        return setDataDir
-
-
-    def delete_data_set(self):
-        fileChooser = self.calibChooserScreen.ids['calibChooser']
-        try:
-            shutil.rmtree(fileChooser.selection[0])
-            fileChooser._update_files()
-        except Exception as e:
-            pass
-
-
     def on_pause(self):
         return True
 
 
     def on_resume(self):
         pass
-
-
-class MsgPopup(Popup):
-    def __init__(self, msg):
-        super(MsgPopup, self).__init__()
-        self.ids.message_label.text = msg
 
 
 if __name__ == '__main__':

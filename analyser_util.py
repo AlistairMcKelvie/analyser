@@ -3,8 +3,11 @@ from kivy.clock import Clock
 from kivy.uix.popup import Popup
 
 from plyer import camera
+
 from functools import partial
+from datetime import datetime
 from PIL import Image as PILImage
+import os
 
 
 def channelIndexFromName(measuredChannel):
@@ -40,4 +43,25 @@ class MsgPopup(Popup):
     def __init__(self, msg):
         super(MsgPopup, self).__init__()
         self.ids.message_label.text = msg
+
+
+def create_new_data_set(dirName):
+    setDataDir = '{0}/{1:%Y%m%d_%H:%M}/'.format(dirName, datetime.now())
+    # TODO handle data error if dir already exists
+    try:
+        os.mkdir(setDataDir)
+    except OSError:
+        setDataDir = '{0}/{1:%Y%m%d_%H:%M:%S}/'.format(dirName, datetime.now())
+        os.mkdir(setDataDir)
+    return setDataDir
+
+
+def delete_data_set():
+    app = App.get_running_app()
+    fileChooser = app.calibChooserScreen.ids['calibChooser']
+    try:
+        shutil.rmtree(fileChooser.selection[0])
+        fileChooser._update_files()
+    except Exception as e:
+        pass
 

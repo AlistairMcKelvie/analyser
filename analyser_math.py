@@ -6,7 +6,15 @@ from analyser_util import channelIndexFromName
 
 
 class CalcLogger(object):
+    '''Used for logging maths functions to log file or screen'''
+
     def __init__(self, mode='print', fileName=''):
+        '''Create logger in print to screen or write to file mode.
+
+        Keyword arguments:
+        mode -- log mode 'print' or 'log' (default 'print')
+        fileName -- file to log to, ignored if print mode
+        '''
         assert mode in ['log', 'print']
         self.mode = mode
         self.fileName = fileName
@@ -18,6 +26,7 @@ class CalcLogger(object):
                     pass
 
     def log(self, st):
+        '''log string as utf-8 to screen of file depending on mode.'''
         if self.mode == 'print':
             print st.encode('utf-8')
         else:
@@ -26,6 +35,9 @@ class CalcLogger(object):
 
 
 def calculateConc(calib, absorb):
+    '''Calculate a concentration based on previously calculated 
+    calibration and an absorbance value. Returns None if calib is not
+    calculated, and float otherwise.'''
     if calib is None:
         return None
     else:
@@ -33,25 +45,27 @@ def calculateConc(calib, absorb):
         return result
 
 
-def readQConf(N, conf, qConfCSV):
-    with open(qConfCSV, 'rb') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if int(row['N']) == N:
-                return row['CL{}'.format(conf)]
-        else:
-            raise RuntimeError(('no matching Q conf value for '
-                               'N: {}, CL: {}').format(N, conf))
-
-
-def calculateACalibCurve(spots, logger, measuredChannel, analysisMode,
+def calculateCalibCurve(spots, logger, measuredChannel, analysisMode,
                          qConfCSV, CL=90, blankVal=None):
+    '''Calculates a calibation curve based on a list of spots.
+
+    spot -- a list of ColorReaderSpot objects, must contain spots with
+    different conc values, or 'NotEnoughConcentrations' runtime error will be raised.
+    logger -- a CalcLogger object for doing logging.
+    measuredChannel -- 'red'/'green'/'blue'; color channel being used for analysis.
+    analysisMode -- 'Blank Normalize' or 'Surrounds Normalize'; technique for
+    normalizing sample values, dividing color value by the color value of the
+    blank, or by dividing by the color value of an area surrounding the main spot.
+    qConfCSV -- path to csv containing the table of q test confidence values
+    CL - required q test confidence percent for exclusion of a spot, (default - 90)
+    blankVal -- mean color value of the blank spots, not used if mode is
+    'Surrounds Normalize', otherwise will raise 'NoBlank' if not present.'''
     log = logger.log
     channelIndex = channelIndexFromName(measuredChannel)
+
     absorbAverageDict = {}
     concSet = set()
     spotConcDict = OrderedDict()
-
     # put lists of spots with the same conc in a dictionary
     for spot in spots:
         concSet.add(spot.conc)
@@ -63,7 +77,7 @@ def calculateACalibCurve(spots, logger, measuredChannel, analysisMode,
     assert analysisMode in ['Blank Normalize', 'Surrounds Normalize']
     if analysisMode == 'Blank Normalize':
         if blankVal is None:
-            return None
+            raise RuntimeError('NoBlankError')
     for conc in spotConcDict:
         log(u'calculating \u03b1 values')
         log(u'\u03b1 = -log(color value/blank value)')
@@ -104,7 +118,7 @@ def calculateACalibCurve(spots, logger, measuredChannel, analysisMode,
     if N < 2:
         log('Not enough different calibration '
             'concentrations to calculate curve')
-        return None
+        raise RuntimeError('NotEnoughConcentrations')
     else:
         log('Calculating LSR')
         log(u'conc = M\u03b1 + C')
@@ -147,6 +161,7 @@ def calculateACalibCurve(spots, logger, measuredChannel, analysisMode,
 
 
 def calculateBlankVal(spots, measuredChannel, logger):
+    '''Calculates the mean color value of passe
     channelIndex = channelIndexFromName(measuredChannel)
     blanksList = []
     for spot in spots:
@@ -158,6 +173,7 @@ def calculateBlankVal(spots, measuredChannel, logger):
     else:
         logger.log('No blank values found')
         return None
+
 
 def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=None, firstWrite=False):
     channelIndex = channelIndexFromName(measuredChannel)
@@ -333,6 +349,18 @@ def qTest(spots, qConfCSV, CL, logger=None):
         spots[-1].exclude = True
     else:
         log('all passed')
+
+
+def readQConf(N, conf, qConfCSV):
+
+    with open(qConfCSV, 'rb') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if int(row['N']) == N:
+                return row['CL{}'.format(conf)]
+        else:
+            raise RuntimeError(('no matching Q conf value for '
+                               'N: {}, CL: {}').format(N, conf))
 
 
 def percentileTest(spots, logger=None):

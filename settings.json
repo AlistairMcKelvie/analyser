@@ -17,5 +17,12 @@
         "title": "Email Address",
         "section": "email",
         "key": "address"
+    },
+    {
+        "type": "options",
+        "title": "mode",
+        "section": "technical",
+        "key": "analysisMode",
+        "options": ["Blank Normalize", "Surrounds Normalize"]
     }
 ]

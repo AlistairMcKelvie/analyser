@@ -29,12 +29,15 @@
             valign: 'middle'
             on_release:
                 app.writeSpotsToConfig()
+                app.logger = am.CalcLogger('log', app.calcLog)
                 print 'len(app.calibSpots)', len(app.calibSpots)
                 app.calibSpots.extend(copy(colorReader.spots))
                 print 'len(app.calibSpots)', len(app.calibSpots)
-                app.calib = am.calculateACalibCurve(app.calibSpots, app.calcLog, app.measuredChannel, app.qConfCSV)
+                if app.analysisMode == 'Blank Normalize': app.blankVal = am.calculateBlankVal(app.calibSpots, app.measuredChannel, app.logger)
+                else: app.blankVal = None
+                app.calib = am.calculateACalibCurve(app.calibSpots, app.logger, app.measuredChannel, app.analysisMode, app.qConfCSV, blankVal=app.blankVal)
                 app.writeCalibFile(app.calibFile, app.calib)
-                am.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, app.measuredChannel, app.firstRaw)
+                am.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, app.measuredChannel, app.analysisMode, app.blankVal, app.firstRaw)
                 app.firstRaw = False
                 app.goto_calib_results()
         TextInput:
@@ -218,9 +221,9 @@
             valign: 'middle'
             on_release:
                 app.writeSpotsToConfig()
-                calcConc = am.calculateSampleConc(app.calib, app.sampleScreen.ids['colorReader'].spots, app.calcLog, root.sampleGrp, app.qConfCSV)
+                calcConc = am.calculateSampleConc(app.calib, app.sampleScreen.ids['colorReader'].spots, app.analysisMode, app.logger, root.sampleGrp, app.qConfCSV, blankVal=app.blankVal)
                 am.writeSamplesFile(app.samplesFile, calcConc, root.sampleGrp, app.firstSample) 
-                am.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots, app.measuredChannel)
+                am.writeRawData(app.calib, app.rawFile, app.sampleScreen.ids['colorReader'].spots, app.measuredChannel, app.analysisMode, app.blankVal)
                 app.firstSample = False
                 root.sampleGrp += 1
                 app.goto_sample_results(app.sampleScreen.ids['colorReader'].spots, calcConc)
@@ -346,7 +349,7 @@
 <ColorReaderToggleButton@ToggleButton>:
     group: 'select'
     allow_no_currentSpot: False
-    font_size: '5dp'
+    font_size: '8dp'
     halign: 'center'
     valign: 'middle'
     markup: True

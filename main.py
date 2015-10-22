@@ -64,6 +64,7 @@ class AnalyserApp(App):
     calibFile = StringProperty('')
     calcLog = StringProperty('')
     qConfCSV = StringProperty('')
+    analysisMode = StringProperty('')
 
     def build(self):
         '''Runs when app starts'''
@@ -71,11 +72,11 @@ class AnalyserApp(App):
         self.imageMenuScreen = ImageMenuScreen()
         self.fileChooserScreen = FileChooserScreen()
         self.calibChooserScreen = CalibChooserScreen()
-        
+
         Builder.load_file('color_reader.kv')
         self.calibrationScreen = CalibrationScreen()
         self.sampleScreen = SampleScreen()
-        
+
         Builder.load_file('analyser_display.kv')
         self.calibResultsScreen = CalibResultsScreen()
         self.sampleResultsScreen = SampleResultsScreen()
@@ -87,8 +88,9 @@ class AnalyserApp(App):
         self.calibNo = 0
         self.qConfCSV = 'Q_Crit_Vals.csv'
         self.measuredChannel = self.config.get('technical', 'measuredChannel')
+        self.analysisMode = self.config.get('technical', 'analysisMode')
         return self.mainMenuScreen
-    
+
 
     def goto_main_menu(self):
         self.clearAllWidgets()
@@ -103,19 +105,24 @@ class AnalyserApp(App):
             calibGraph.drawCurve(self.calib)
         colorIndex = channelIndexFromName(self.measuredChannel) 
         valuesTable.clear_widgets()
+        assert self.analysisMode in ['Blank Normalize', 'Surrounds Normalize']
+        if self.analysisMode == 'Blank Normalize':
+            blankVal = self.blankVal
         for spot in self.calibSpots:
             row = BoxLayout()
             valuesTable.add_widget(row)
             row.add_widget(Label(text=str(spot.idNo), font_size=metrics.dp(15)))
             row.add_widget(Label(text=str(spot.conc), font_size=metrics.dp(15)))
             row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex]))),
+                                 font_size=metrics.dp(15)))
+            if self.analysisMode == 'Surrounds Normalize':
+                blankVal = spot.surroundsVal
+            row.add_widget(Label(text=str(int(round(blankVal))),
                                 font_size=metrics.dp(15)))
-            row.add_widget(Label(text=str(int(round(spot.blankVal))),
-                                font_size=metrics.dp(15)))
-            row.add_widget(Label(text='{:.3f}'.format(spot.alpha),
+            row.add_widget(Label(text='{:.3f}'.format(spot.absorb),
                                  font_size=metrics.dp(15)))
         valuesTable.height = len(self.calibSpots) * metrics.dp(20)
-        
+
         if self.calib is None:
             calibEqn = u'Not enough calibration points to calculate equation.'
         else:
@@ -137,10 +144,10 @@ class AnalyserApp(App):
             row.add_widget(Label(text=str(spot.idNo), font_size=metrics.dp(15)))
             row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex]))),
                                  font_size=metrics.dp(15)))
-            row.add_widget(Label(text='{:.3f}'.format(spot.alpha),
+            row.add_widget(Label(text='{:.3f}'.format(spot.absorb),
                                  font_size=metrics.dp(15)))
         valuesTable.height = len(spots) * metrics.dp(20)
-        
+
         self.sampleResultsScreen.ids['calcConc'].text =\
             'Calculated Concentration: {:.3f}'.format(conc)
         self.clearAllWidgets()
@@ -201,7 +208,7 @@ class AnalyserApp(App):
         print 'texSize', tex.size
         texRatio = texSize[0] / float(texSize[1])
         print 'texRatio', texRatio
-        
+
         if texRatio > windowRatio:
             #texture is width constrained
             width = windowSize[0] * 0.8
@@ -228,7 +235,7 @@ class AnalyserApp(App):
         colorReader.height = height
         colorReader.x = x
         colorReader.y = y
-        
+
 
     def goto_graph(self):
         colorReader = self.colorReaderScreen.ids['colorReader']
@@ -257,7 +264,6 @@ class AnalyserApp(App):
             spotY = self.config.get('SpotY', str(spot.idNo))
             if spotSize != 'None':
                 spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
-                spot.addBlankSpots()
 
 
     def initializeSample(self):
@@ -273,7 +279,6 @@ class AnalyserApp(App):
             spotY = self.config.get('SpotY', str(spot.idNo))
             if spotSize != 'None':
                 spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
-                spot.addBlankSpots()
 
 
     def writeSpotsToConfig(self):
@@ -303,10 +308,11 @@ class AnalyserApp(App):
         config.setdefaults('kivy', {'log_dir': self.user_data_dir})
         config.setdefaults('technical', {'spotCount': 15,
                                          'spotSize': 10,
-                                         'measuredChannel': 'red'})
+                                         'measuredChannel': 'red',
+                                         'analysisMode': 'Blank Normalize'})
         config.setdefaults('email', {'address': 'example@company.com'})
         self.spotCount = int(config.get('technical', 'spotCount'))
-        
+
         noneDict = {}
         for i in range(1, self.spotCount + 1):
             noneDict[str(i)] = None
@@ -315,7 +321,7 @@ class AnalyserApp(App):
         config.setdefaults('SpotSizes', noneDict)
         config.setdefaults('SpotX', noneDict)
         config.setdefaults('SpotY', noneDict)
- 
+
 
     def sendEmail(self):
         sendMail([self.config.get('email', 'address')],
@@ -324,7 +330,7 @@ class AnalyserApp(App):
                  ('Spot analyser files from {}'
                   ).format(self.writeDir.split('/')[-2].split('\\')[-1]),
                  self.writeDir)
-    
+
 
     def clearAllWidgets(self):
         for widget in Window.children:
@@ -375,6 +381,9 @@ class AnalyserApp(App):
                     int(self.config.get('technical', 'spotSize'))
                 self.sampleScreen.ids['colorReader'].currentSpotSize =\
                     int(self.config.get('technical', 'spotSize'))
+            elif key == 'analysisMode':
+                self.analysisMode = self.config.get('technical',
+                                                    'analysisMode')
 
 
     def writeCalibFile(self, calibFile, calib):
@@ -383,7 +392,7 @@ class AnalyserApp(App):
                 f.write('M: {}\n'.format(calib.M))
                 f.write('C: {}\n'.format(calib.C))
                 f.write('R2: {}\n'.format(calib.R2))
-                f.write('Channel: {}\n'.format(calib.channel))            
+                f.write('Channel: {}\n'.format(calib.channel))
 
 
     def readCalibFile(self, calibFile):
@@ -408,7 +417,7 @@ class AnalyserApp(App):
             os.mkdir(setDataDir)
         return setDataDir
 
-    
+
     def delete_data_set(self):
         fileChooser = self.calibChooserScreen.ids['calibChooser']
         try:

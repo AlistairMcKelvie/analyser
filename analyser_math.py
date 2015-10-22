@@ -443,3 +443,24 @@ def percentileTest(spots, logger=None):
         if spot.absorb < tenP or spot.absorb > nintyP:
             spot.exclude = True
             log('excluding {}'.format(spot.absorb))
+
+
+def writeCalibFile(calibFile, calib):
+    '''Write calib data to a calib file.'''
+    if calib is not None:
+        with open(calibFile, 'wb') as f:
+            f.write('M: {}\n'.format(calib.M))
+            f.write('C: {}\n'.format(calib.C))
+            f.write('R2: {}\n'.format(calib.R2))
+            f.write('Channel: {}\n'.format(calib.channel))
+
+
+def readCalibFile(calibFile):
+    '''Read calib file and return a Calib object.'''
+    with open(calibFile, 'r') as f:
+        M = f.next().split()[1]
+        C = f.next().split()[1]
+        R2 = f.next().split()[1]
+        measuredChannel = f.next().split()[1]
+    Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'channel'])
+    return Calib(M=M, C=C, R2=R2, channel=measuredChannel)

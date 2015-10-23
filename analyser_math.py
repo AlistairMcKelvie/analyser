@@ -39,7 +39,7 @@ def calculateConc(calib, absorb):
     '''Calculate a concentration based on previously calculated 
     calibration and an absorbance value. Returns None if calib is not
     calculated, and float otherwise.'''
-    if calib is None:
+    if calib.status != 'OK':
         return None
     else:
         result = (absorb - calib.C) / calib.M
@@ -78,7 +78,7 @@ def calculateCalibCurve(spots, logger, measuredChannel, analysisMode,
     assert analysisMode in ['Blank Normalize', 'Surrounds Normalize']
     if analysisMode == 'Blank Normalize':
         if blankVal is None:
-            return 'NoBlank'
+            return CalibrationCurve(status='NoBlank')
 
     for conc in spotConcDict:
         log(u'calculating \u03b1 values')
@@ -120,7 +120,7 @@ def calculateCalibCurve(spots, logger, measuredChannel, analysisMode,
     if N < 2:
         log('Not enough different calibration '
             'concentrations to calculate curve')
-        return 'NotEnoughConcentrations'
+        return CalibrationCurve(status='NotEnoughConcentrations')
     else:
         log('Calculating LSR')
         log(u'conc = M\u03b1 + C')
@@ -159,7 +159,8 @@ def calculateCalibCurve(spots, logger, measuredChannel, analysisMode,
         R2 = 1 - SSres / SStot
         log(u'R\u00b2 = {:.5f}'.format(R2))
         Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'channel'])
-        return Calib(M=M, C=C, R2=R2, channel=measuredChannel)
+        return CalibrationCurve(M=M, C=C, R2=R2, channel=measuredChannel,
+                                pointsCount=len(spots))
 
 
 def calculateBlankVal(spots, measuredChannel, logger):
@@ -185,7 +186,7 @@ def calculateBlankVal(spots, measuredChannel, logger):
 def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=None, firstWrite=False):
     '''Writes out the raw data from a list of spots.
 
-    calib -- a namedtuple Calib object which contains data on the calibration curve.
+    calib -- a namedtuple CalibrationCurve object which contains data on the calibration curve.
     rawFile -- path of the file to write to.
     spots -- a list of spots to write out.
     measuredChannel -- 'red'/'green'/'blue'; color channel being used for analysis.
@@ -207,9 +208,6 @@ def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=
             csvWriter.writeheader()
 
     assert analysisMode in ['Blank Normalize', 'Surrounds Normalize']
-    if analysisMode == 'Blank Normalize':
-        if blankVal is None:
-            raise RuntimeError('NoBlank')
 
     with open(rawFile, 'ab') as sFile:
         csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
@@ -226,10 +224,12 @@ def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=
                 sample_no = spot.idNo
             if analysisMode == 'Surrounds Normalize':
                 blankVal = spot.surroundsVal
-            spot.absorb = -math.log(spot.colorVal[channelIndex]/
-                                    blankVal)
-            calculatedConc = calculateConc(calib, spot.absorb)
-            if calculatedConc is not None:
+            if blankVal is None:
+                calculatedConc = ''
+            else:
+                spot.absorb = -math.log(spot.colorVal[channelIndex]/
+                                        blankVal)
+                calculatedConc = calculateConc(calib, spot.absorb)
                 calculatedConc = '{:.3f}'.format(calculatedConc)
             csvWriter.writerow(
                 {'type': type,
@@ -445,23 +445,3 @@ def percentileTest(spots, logger=None):
             spot.exclude = True
             log('excluding {}'.format(spot.absorb))
 
-
-def writeCalibFile(calibFile, calib):
-    '''Write calib data to a calib file.'''
-    if calib is not None:
-        with open(calibFile, 'wb') as f:
-            f.write('M: {}\n'.format(calib.M))
-            f.write('C: {}\n'.format(calib.C))
-            f.write('R2: {}\n'.format(calib.R2))
-            f.write('Channel: {}\n'.format(calib.channel))
-
-
-def readCalibFile(calibFile):
-    '''Read calib file and return a Calib object.'''
-    with open(calibFile, 'r') as f:
-        M = f.next().split()[1]
-        C = f.next().split()[1]
-        R2 = f.next().split()[1]
-        measuredChannel = f.next().split()[1]
-    Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'channel'])
-    return Calib(M=M, C=C, R2=R2, channel=measuredChannel)

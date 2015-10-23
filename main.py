@@ -95,14 +95,18 @@ class AnalyserApp(App):
     def goto_calib_results(self):
         valuesTable = self.calibResultsScreen.ids['valuesTable']
         calibGraph = self.calibResultsScreen.ids['calibGraph']
-        calibGraph.drawSpots(self.calibSpots)
-        if self.calib is not None:
+        if self.calib.status in ['OK', 'NotEnoughConcentrations']:
+            calibGraph.drawSpots(self.calibSpots)
+        if self.calib.status == 'OK':
             calibGraph.drawCurve(self.calib)
         colorIndex = channelIndexFromName(self.measuredChannel) 
         valuesTable.clear_widgets()
         assert self.analysisMode in ['Blank Normalize', 'Surrounds Normalize']
         if self.analysisMode == 'Blank Normalize':
-            blankVal = self.blankVal
+            if self.blankVal is None:
+                blankVal = ''
+            else:
+                blankVal = str(int(round(self.blankVal)))
         for spot in self.calibSpots:
             row = BoxLayout()
             valuesTable.add_widget(row)
@@ -111,16 +115,20 @@ class AnalyserApp(App):
             row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex]))),
                                  font_size=metrics.dp(15)))
             if self.analysisMode == 'Surrounds Normalize':
-                blankVal = spot.surroundsVal
-            row.add_widget(Label(text=str(int(round(blankVal))),
-                                font_size=metrics.dp(15)))
-            row.add_widget(Label(text='{:.3f}'.format(spot.absorb),
+                blankVal = str(int(round(spot.surroundsVal)))
+            row.add_widget(Label(text=blankVal, font_size=metrics.dp(15)))
+
+            if self.calib.status in 'NoBlank' and self.analysisMode == 'Blank Normalize':
+                absorb = ''
+            else:
+                absorb = '{:.3f}'.format(spot.absorb)
+            row.add_widget(Label(text=absorb,
                                  font_size=metrics.dp(15)))
         valuesTable.height = len(self.calibSpots) * metrics.dp(20)
 
-        if self.calib == 'NotEnoughConcentrations':
+        if self.calib.status == 'NotEnoughConcentrations':
             calibEqn = u'Not enough calibration points to calculate equation.'
-        elif self.calib == 'NoBlank':
+        elif self.calib.status == 'NoBlank':
             calibEqn = ('Cannot calculate calibration, no blank value present.\n'
                         'Please read some blank samples.')
         else:

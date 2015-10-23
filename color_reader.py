@@ -21,7 +21,7 @@ from kivy.properties import StringProperty,\
 from color_reader_spot import ColorReaderSpot
 import analyser_math as am
 
-from analyser_util import channelIndexFromName 
+from analyser_util import channelIndexFromName
 from PIL import Image as PILImage
 from PIL.ImageStat import Stat as imageStat
 import math
@@ -366,9 +366,9 @@ class CalibrationScreen(Widget):
             app.blankVal = None
 
         app.calib = am.calculateCalibCurve(app.calibSpots, app.logger,
-                                            app.measuredChannel, app.analysisMode,
-                                            app.qConfCSV, blankVal=app.blankVal)
-        am.writeCalibFile(app.calibFile, app.calib)
+                                       app.measuredChannel, app.analysisMode,
+                                       app.qConfCSV, blankVal=app.blankVal)
+        app.calib.writeCalibFile(app.calibFile)
         am.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, app.measuredChannel, app.analysisMode, app.blankVal, app.firstRaw)
         app.firstRaw = False
         app.goto_calib_results()

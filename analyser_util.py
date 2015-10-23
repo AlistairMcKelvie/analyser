@@ -8,6 +8,7 @@ from functools import partial
 from datetime import datetime
 from PIL import Image as PILImage
 import os
+from types import *
 
 
 def channelIndexFromName(measuredChannel):
@@ -66,9 +67,9 @@ def delete_data_set():
         pass
 
 class CalibrationCurve(object):
-    def __init__(self, M=None, C=None, R2=None, channel=None, pointsCount=0, file=None, status='OK')
-        Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'channel'])
-        assert status in ['OK', 'NoBlank', 'NotEnoughPoints']
+    def __init__(self, M=None, C=None, R2=None, channel=None,
+                 pointsCount=0, file=None, status='OK'):
+        assert status in ['OK', 'NoBlank', 'NotEnoughConcentrations']
         if file is not None:
             assert M is None
             assert C is None
@@ -97,13 +98,13 @@ class CalibrationCurve(object):
                 self.C = float(f.next().split()[1])
                 self.R2 = float(f.next().split()[1])
                 self.measuredChannel = f.next().split()[1]
-                self.pointsCount = int(f.next().split()[1]
+                self.pointsCount = int(f.next().split()[1])
 
 
     def writeCalibFile(self, calibFile):
         with open(calibFile, 'wb') as f:
             if self.status == 'OK':
-                f.write('Status: {}\n'.format(self.status)
+                f.write('Status: {}\n'.format(self.status))
                 f.write('M: {}\n'.format(self.M))
                 f.write('C: {}\n'.format(self.C))
                 f.write('R2: {}\n'.format(self.R2))

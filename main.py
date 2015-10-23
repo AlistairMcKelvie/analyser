@@ -118,8 +118,11 @@ class AnalyserApp(App):
                                  font_size=metrics.dp(15)))
         valuesTable.height = len(self.calibSpots) * metrics.dp(20)
 
-        if self.calib is None:
+        if self.calib == 'NotEnoughConcentrations':
             calibEqn = u'Not enough calibration points to calculate equation.'
+        elif self.calib == 'NoBlank':
+            calibEqn = ('Cannot calculate calibration, no blank value present.\n'
+                        'Please read some blank samples.')
         else:
             calibEqn = (u'Concentration = {0:.3f}\u03b1 + {1:.3f}      R\u00b2 = {2:.4f}'
                         ).format(self.calib.M, self.calib.C, self.calib.R2)

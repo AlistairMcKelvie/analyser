@@ -5,6 +5,7 @@ from kivy.uix.widget import Widget
 
 from kivy.clock import Clock
 import os
+from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics.vertex_instructions import Rectangle
 from kivy.graphics import Color
 from kivy.core.image import Image
@@ -17,11 +18,15 @@ from kivy.properties import StringProperty,\
                             ObjectProperty,\
                             BooleanProperty
 
-from kivy.graphics.instructions import InstructionGroup
+from color_reader_spot import ColorReaderSpot
+import analyser_math as am
+
 from analyser_util import channelIndexFromName 
 from PIL import Image as PILImage
 from PIL.ImageStat import Stat as imageStat
 import math
+import copy
+
 
 class ColorReaderSpot(object):
     def __init__(self, idNo = None, type='std', conc=0.0):
@@ -98,7 +103,6 @@ class ColorReaderSpot(object):
         self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
         self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
         self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
-
 
 class ColorReader(Widget):
     spots = ListProperty([])
@@ -339,19 +343,43 @@ class ColorReader(Widget):
     def updateSpotConc(self, spot, conc):
         spot.conc = conc
         buttonStr = spot.updateText()
-        self.spotButtonText[spot.idNo - 1] = buttonStr 
+        self.spotButtonText[spot.idNo - 1] = buttonStr
 
 
 class CalibrationScreen(Widget):
     tex = ObjectProperty(None, allownone=True)
+
+    def acceptConfig(self):
+        app = App.get_running_app()
+        colorReader = self.ids['colorReader']
+
+        app.writeSpotsToConfig()
+        app.logger = am.CalcLogger('log', app.calcLog)
+        print 'len(app.calibSpots)', len(app.calibSpots)
+        app.calibSpots.extend(copy.deepcopy(colorReader.spots))
+        print 'len(app.calibSpots)', len(app.calibSpots)
+        if app.analysisMode == 'Blank Normalize':
+            app.blankVal = am.calculateBlankVal(app.calibSpots,
+                                                app.measuredChannel,
+                                                app.logger)
+        else:
+            app.blankVal = None
+
+        app.calib = am.calculateCalibCurve(app.calibSpots, app.logger,
+                                            app.measuredChannel, app.analysisMode,
+                                            app.qConfCSV, blankVal=app.blankVal)
+        am.writeCalibFile(app.calibFile, app.calib)
+        am.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, app.measuredChannel, app.analysisMode, app.blankVal, app.firstRaw)
+        app.firstRaw = False
+        app.goto_calib_results()
 
 
 class SampleScreen(Widget):
     tex = ObjectProperty(None, allownone=True)
     sampleGrp = NumericProperty(1)
 
-
     def updateSpotGrps(self):
         print 'sample grp is {}'.format(self.sampleGrp)
         for spot in self.ids['colorReader'].spots:
             spot.sampleGrp = self.sampleGrp
+

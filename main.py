@@ -386,24 +386,6 @@ class AnalyserApp(App):
                                                     'analysisMode')
 
 
-    def writeCalibFile(self, calibFile, calib):
-        if calib is not None:
-            with open(calibFile, 'wb') as f:
-                f.write('M: {}\n'.format(calib.M))
-                f.write('C: {}\n'.format(calib.C))
-                f.write('R2: {}\n'.format(calib.R2))
-                f.write('Channel: {}\n'.format(calib.channel))
-
-
-    def readCalibFile(self, calibFile):
-        with open(calibFile, 'r') as f:
-            M = f.next().split()[1]
-            C = f.next().split()[1]
-            R2 = f.next().split()[1]
-            measuredChannel = f.next().split()[1]
-        Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'channel'])
-        return Calib(M=M, C=C, R2=R2, channel=measuredChannel)
-
 
     def create_new_data_set(self):
         setDataDir = '{0}/{1:%Y%m%d_%H:%M}/'.format(self.user_data_dir,

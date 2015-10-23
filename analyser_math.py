@@ -2,7 +2,8 @@ import math
 import csv
 from collections import namedtuple, OrderedDict
 from color_reader import ColorReaderSpot
-from analyser_util import channelIndexFromName 
+from analyser_util import channelIndexFromName
+from analyser_util import CalibrationCurve
 
 
 class CalcLogger(object):

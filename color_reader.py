@@ -29,7 +29,7 @@ import copy
 
 
 class ColorReaderSpot(object):
-    def __init__(self, idNo = None, type='std', conc=0.0):
+    def __init__(self, idNo = None, channel=None, type='std', conc=0.0):
         self.idNo = idNo
         self.sampleGrp = None
         self.type = type
@@ -43,6 +43,7 @@ class ColorReaderSpot(object):
         self.surroundsSpotColor = Color(0, 0, 0, 0.25)
         self.absorb = None
         self.exclude = False
+        self.channel = channel
 
 
     def updateText(self):
@@ -104,6 +105,7 @@ class ColorReaderSpot(object):
         self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
         self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
 
+
 class ColorReader(Widget):
     spots = ListProperty([])
     imageFile = StringProperty('')
@@ -128,26 +130,16 @@ class ColorReader(Widget):
     text13 = StringProperty('13')
     text14 = StringProperty('14')
     text15 = StringProperty('15')
-    spotButtonText = ReferenceListProperty(text1,
-                                           text2,
-                                           text3,
-                                           text4,
-                                           text5,
-                                           text6,
-                                           text7,
-                                           text8,
-                                           text9,
-                                           text10,
-                                           text11,
-                                           text12,
-                                           text13,
-                                           text14,
-                                           text15)
+    spotButtonText = ReferenceListProperty(text1, text2, text3, text4, text5,
+                                           text6, text7, text8, text9, text10, 
+                                           text11, text12,  text13, text14, text15)
 
 
     def __init__(self, **kwargs):
         super(ColorReader, self).__init__(**kwargs)
-        self.spots = [ColorReaderSpot(idNo=i+1) for i in range(self.spotCount)]
+        app = App.get_running_app()
+        self.spots = [ColorReaderSpot(idNo=i+1, channel=app.measuredChannel)
+                      for i in range(self.spotCount)]
         for spot in self.spots:
             self.canvas.add(spot.instGrp)
         self.analysisImage = None
@@ -164,7 +156,7 @@ class ColorReader(Widget):
         print 'opening image file:', self.imageFile
         for spot in self.spots:
             if len(spot.instGrp.children) > 1:
-                assert len(spot.instGrp.children) == 3 or len(spot.instGrp.children) == 12
+                assert len(spot.instGrp.children) in [3, 12]
                 spot.colorMode = self.analysisImage.mode
                 if spot.type is None:
                     spot.type = self.currentSpotType
@@ -284,8 +276,10 @@ class ColorReader(Widget):
         spotY = spot.instGrp.children[2].pos[1]
         scaled_x = int((spotX - self.x) * (image.size[0] / float(self.width)))
         scaled_y = int((spotY - self.y) * (image.size[1] / float(self.height)))
-        scaled_spotWidth = max(int(spotSize * (image.size[0] / float(self.width))), 1)
-        scaled_spotHeight = max(int(spotSize * (image.size[1] / float(self.height))), 1)
+        scaled_spotWidth = max(int(spotSize * (image.size[0] /\
+                                               float(self.width))), 1)
+        scaled_spotHeight = max(int(spotSize * (image.size[1] /\
+                                                float(self.height))), 1)
         croppedImage = image.crop((scaled_x, scaled_y,
                                    scaled_x + scaled_spotWidth,
                                    scaled_y + scaled_spotHeight))
@@ -305,18 +299,23 @@ class ColorReader(Widget):
         for i in [(5, -1, 0), (7, 0, 1), (9, 1, 0), (11, 0, -1)]:
             colorValsList = []
             spotSize = spot.instGrp.children[i[0]].size[0]
-            scaled_spotWidth = max(int(spotSize * (image.size[0] / float(self.width))), 1)
-            scaled_spotHeight = max(int(spotSize * (image.size[1] / float(self.height))), 1)
+            scaled_spotWidth = max(int(spotSize * (image.size[0] /\
+                                                   float(self.width))), 1)
+            scaled_spotHeight = max(int(spotSize * (image.size[1] /
+                                                    float(self.height))), 1)
             # low res scan
             for j in range(0, scanRange, int(scanRange / 5)):
                 spotX = spot.instGrp.children[i[0]].pos[0] + j * i[1]
                 spotY = spot.instGrp.children[i[0]].pos[1] + j * i[2]
-                scaled_x = int((spotX - self.x) * (image.size[0] / float(self.width)))
-                scaled_y = int((spotY - self.y) * (image.size[1] / float(self.height)))
+                scaled_x = int((spotX - self.x) *\
+                               (image.size[0] / float(self.width)))
+                scaled_y = int((spotY - self.y) *\
+                               (image.size[1] / float(self.height)))
                 croppedImage = image.crop((scaled_x, scaled_y,
                                            scaled_x + scaled_spotWidth,
                                            scaled_y + scaled_spotHeight))
-                colorValsList.append((imageStat(croppedImage).mean[channelIndex], spotX, spotY))
+                colorValsList.append((imageStat(croppedImage).mean[channelIndex],
+                                     spotX, spotY))
             maxVal = max(colorValsList)
             print maxVal
             maxValList.append(maxVal[0])
@@ -346,7 +345,11 @@ class ColorReader(Widget):
         self.spotButtonText[spot.idNo - 1] = buttonStr
 
 
-class CalibrationScreen(Widget):
+class ColorReaderScreen(Widget):
+    pass
+
+
+class CalibrationScreen(ColorReaderScreen):
     tex = ObjectProperty(None, allownone=True)
 
     def acceptConfig(self):
@@ -366,15 +369,16 @@ class CalibrationScreen(Widget):
             app.blankVal = None
 
         app.calib = am.calculateCalibCurve(app.calibSpots, app.logger,
-                                       app.measuredChannel, app.analysisMode,
-                                       app.qConfCSV, blankVal=app.blankVal)
+                                           app.measuredChannel, app.analysisMode,
+                                           app.qConfCSV, blankVal=app.blankVal)
         app.calib.writeCalibFile(app.calibFile)
-        am.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, app.measuredChannel, app.analysisMode, app.blankVal, app.firstRaw)
+        am.writeRawData(app.calib, app.rawFile, colorReader.spots,
+                        app.analysisMode, app.blankVal, app.firstRaw)
         app.firstRaw = False
         app.goto_calib_results()
 
 
-class SampleScreen(Widget):
+class SampleScreen(ColorReaderScreen):
     tex = ObjectProperty(None, allownone=True)
     sampleGrp = NumericProperty(1)
 
@@ -383,3 +387,19 @@ class SampleScreen(Widget):
         for spot in self.ids['colorReader'].spots:
             spot.sampleGrp = self.sampleGrp
 
+    def getNewSample(self):
+        app = App.get_running_app()
+        colorReader = self.ids['colorReader']
+
+        app.writeSpotsToConfig()
+        calcConc = am.calculateSampleConc(app.calib, colorReader.spots,
+                                          app.analysisMode, app.logger,
+                                          self.sampleGrp, app.qConfCSV,
+                                          blankVal=app.blankVal)
+        am.writeSamplesFile(app.samplesFile, calcConc,
+                            self.sampleGrp, app.firstSample)
+        am.writeRawData(app.calib, app.rawFile, colorReader.spots,
+                        app.analysisMode, app.blankVal)
+        app.firstSample = False
+        self.sampleGrp += 1
+        app.goto_sample_results(colorReader.spots, calcConc)

@@ -20,8 +20,7 @@ import os
 import csv
 from collections import namedtuple
 
-from color_reader import ColorReaderSpot,\
-                         ColorReader,\
+from color_reader import ColorReader,\
                          CalibrationScreen,\
                          SampleScreen
 from analyser_display import CalibResultsScreen,\

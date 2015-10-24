@@ -33,7 +33,7 @@
         Button:
             text: 'Get Sample'
             on_release:
-                if app.calib is not None:app.targetReaderScreen = 'sample';app.goto_image_menu()
+                if app.calib.status == 'OK':app.targetReaderScreen = 'sample';app.goto_image_menu()
 
 <SampleResultsScreen>
     orientation: 'vertical'

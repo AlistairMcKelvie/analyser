@@ -84,7 +84,7 @@ class CalibrationCurve(object):
             self.M = M
             self.C = C
             self.R2 = R2
-            self.measuredChannel = channel
+            self.channel = channel
             self.pointsCount = pointsCount
             self.status = status
         else:
@@ -97,7 +97,7 @@ class CalibrationCurve(object):
                 self.M = float(f.next().split()[1])
                 self.C = float(f.next().split()[1])
                 self.R2 = float(f.next().split()[1])
-                self.measuredChannel = f.next().split()[1]
+                self.channel = f.next().split()[1]
                 self.pointsCount = int(f.next().split()[1])
 
 

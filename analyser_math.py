@@ -183,13 +183,12 @@ def calculateBlankVal(spots, measuredChannel, logger):
         return None
 
 
-def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=None, firstWrite=False):
+def writeRawData(calib, rawFile, spots, analysisMode, blankVal=None, firstWrite=False):
     '''Writes out the raw data from a list of spots.
 
     calib -- a namedtuple CalibrationCurve object which contains data on the calibration curve.
     rawFile -- path of the file to write to.
     spots -- a list of spots to write out.
-    measuredChannel -- 'red'/'green'/'blue'; color channel being used for analysis.
     analysisMode -- 'Blank Normalize' or 'Surrounds Normalize'; technique for
     normalizing sample values, dividing color value by the color value of the
     blank, or by dividing by the color value of an area surrounding the main spot.
@@ -198,7 +197,6 @@ def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=
     'Surrounds Normalize', otherwise will raise 'NoBlank' if not present.
     firstWrite -- whether this is the first time writing to the file, will overwrite
     if true, otherwise will append (default - False).'''
-    channelIndex = channelIndexFromName(measuredChannel)
     fieldNames = ['type', 'sample_group', 'sample_no',
                   'known_concentration', 'calculated_concentration',
                   'red','green', 'blue', 'measured_channel']
@@ -207,7 +205,10 @@ def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=
             csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
             csvWriter.writeheader()
 
-    assert analysisMode in ['Blank Normalize', 'Surrounds Normalize']
+    try:
+        assert analysisMode in ['Blank Normalize', 'Surrounds Normalize']
+    except:
+        import ipdb;ipdb.set_trace()
 
     with open(rawFile, 'ab') as sFile:
         csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
@@ -224,13 +225,18 @@ def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=
                 sample_no = spot.idNo
             if analysisMode == 'Surrounds Normalize':
                 blankVal = spot.surroundsVal
-            if blankVal is None:
-                calculatedConc = ''
-            else:
-                spot.absorb = -math.log(spot.colorVal[channelIndex]/
+
+            if blankVal is not None:
+                spot.absorb = -math.log(spot.colorVal[channelIndexFromName(spot.channel)]/
                                         blankVal)
                 calculatedConc = calculateConc(calib, spot.absorb)
-                calculatedConc = '{:.3f}'.format(calculatedConc)
+                if calculatedConc is not None:
+                    calculatedConc = '{:.3f}'.format(calculatedConc)
+                else:
+                    calculatedConc = ''
+            else:
+                calculatedConc = ''
+
             csvWriter.writerow(
                 {'type': type,
                  'sample_group': sample_group,
@@ -239,7 +245,7 @@ def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=
                  'red': '{:.3f}'.format(spot.colorVal[0]),
                  'green': '{:.3f}'.format(spot.colorVal[1]),
                  'blue': '{:.3f}'.format(spot.colorVal[2]),
-                 'measured_channel': measuredChannel,
+                 'measured_channel': spot.channel,
                  'calculated_concentration': calculatedConc})
 
 
@@ -303,9 +309,10 @@ def calculateSampleConc(calib, spots, analysisMode, logger, sampleGrp,
     valCount = 0
     valSum = 0.0
     for spot in spots:
-        if spot.exclude is False:
+        if not spot.exclude:
             valCount += 1
             valSum += spot.absorb
+        assert calib.channel == spot.channel
     valMean = valSum / valCount
 
     log('mean of remaining brightness values: {}'.format(valMean))

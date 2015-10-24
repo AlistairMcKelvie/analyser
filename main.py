@@ -92,49 +92,9 @@ class AnalyserApp(App):
 
 
     def goto_calib_results(self):
-        valuesTable = self.calibResultsScreen.ids['valuesTable']
-        calibGraph = self.calibResultsScreen.ids['calibGraph']
-        if self.calib.status in ['OK', 'NotEnoughConcentrations']:
-            calibGraph.drawSpots(self.calibSpots)
-        if self.calib.status == 'OK':
-            calibGraph.drawCurve(self.calib)
-        colorIndex = channelIndexFromName(self.measuredChannel) 
-        valuesTable.clear_widgets()
-        assert self.analysisMode in ['Blank Normalize', 'Surrounds Normalize']
-        if self.analysisMode == 'Blank Normalize':
-            if self.blankVal is None:
-                blankVal = ''
-            else:
-                blankVal = str(int(round(self.blankVal)))
-        for spot in self.calibSpots:
-            row = BoxLayout()
-            valuesTable.add_widget(row)
-            row.add_widget(Label(text=str(spot.idNo), font_size=metrics.dp(15)))
-            row.add_widget(Label(text=str(spot.conc), font_size=metrics.dp(15)))
-            row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex]))),
-                                 font_size=metrics.dp(15)))
-            if self.analysisMode == 'Surrounds Normalize':
-                blankVal = str(int(round(spot.surroundsVal)))
-            row.add_widget(Label(text=blankVal, font_size=metrics.dp(15)))
-
-            if self.calib.status in 'NoBlank' and self.analysisMode == 'Blank Normalize':
-                absorb = ''
-            else:
-                absorb = '{:.3f}'.format(spot.absorb)
-            row.add_widget(Label(text=absorb,
-                                 font_size=metrics.dp(15)))
-        valuesTable.height = len(self.calibSpots) * metrics.dp(20)
-
-        if self.calib.status == 'NotEnoughConcentrations':
-            calibEqn = u'Not enough calibration points to calculate equation.'
-        elif self.calib.status == 'NoBlank':
-            calibEqn = ('Cannot calculate calibration, no blank value present.\n'
-                        'Please read some blank samples.')
-        else:
-            calibEqn = (u'Concentration = {0:.3f}\u03b1 + {1:.3f}      R\u00b2 = {2:.4f}'
-                        ).format(self.calib.M, self.calib.C, self.calib.R2)
-        self.calibResultsScreen.ids['calibEqn'].text = calibEqn 
-
+        self.calibResultsScreen.refreshCalibResults(self.calibSpots, self.calib,
+                                                    self.blankVal, self.analysisMode,
+                                                    self.measuredChannel)
         self.clearAllWidgets()
         Window.add_widget(self.calibResultsScreen)
 

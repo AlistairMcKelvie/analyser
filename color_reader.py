@@ -371,7 +371,7 @@ class CalibrationScreen(ColorReaderScreen):
 
 
 
-    def acceptConfig(self):
+    def acceptCalib(self):
         app = App.get_running_app()
         colorReader = self.ids['colorReader']
 
@@ -400,6 +400,24 @@ class CalibrationScreen(ColorReaderScreen):
 class SampleScreen(ColorReaderScreen):
     tex = ObjectProperty(None, allownone=True)
     sampleGrp = NumericProperty(1)
+
+    def __init__(self, **kwargs):
+        super(SampleScreen, self).__init__(**kwargs)
+        app = App.get_running_app()
+        reader = self.ids['colorReader']
+
+        reader.currentSpotSize = int(app.config.get('technical', 'spotSize'))
+        self.updateSpotGrps()
+        for spot in reader.spots:
+            spot.type = 'sample'
+            spot.conc = None
+            spot.colorVal = None
+            spotSize = app.config.get('SpotSizes', str(spot.idNo))
+            spotX = app.config.get('SpotX', str(spot.idNo))
+            spotY = app.config.get('SpotY', str(spot.idNo))
+            if spotSize != 'None':
+                spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
+
 
     def updateSpotGrps(self):
         print 'sample grp is {}'.format(self.sampleGrp)

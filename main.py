@@ -73,8 +73,6 @@ class AnalyserApp(App):
         self.calibResultsScreen = CalibResultsScreen()
         self.sampleResultsScreen = SampleResultsScreen()
 
-        self.initializeCalib()
-        self.initializeSample()
         self.firstSample = True
         self.firstRaw = True
         self.calibNo = 0
@@ -185,38 +183,6 @@ class AnalyserApp(App):
         colorReader.height = height
         colorReader.x = x
         colorReader.y = y
-
-
-    def initializeCalib(self):
-        reader = self.calibrationScreen.ids['colorReader']
-        reader.currentSpotSize = int(self.config.get('technical', 'spotSize'))
-        for spot in reader.spots:
-            spotType = self.config.get('SpotTypes', str(spot.idNo))
-            if spotType != 'None':
-                spot.type = spotType
-            spotConc = self.config.get('SpotConcentrations', str(spot.idNo))
-            if spotConc != 'None':
-                spot.conc = float(spotConc)
-            spotSize = self.config.get('SpotSizes', str(spot.idNo))
-            spotX = self.config.get('SpotX', str(spot.idNo))
-            spotY = self.config.get('SpotY', str(spot.idNo))
-            if spotSize != 'None':
-                spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
-
-
-    def initializeSample(self):
-        reader = self.sampleScreen.ids['colorReader']
-        reader.currentSpotSize = int(self.config.get('technical', 'spotSize'))
-        self.sampleScreen.updateSpotGrps()
-        for spot in reader.spots:
-            spot.type = 'sample'
-            spot.conc = None
-            spot.colorVal = None
-            spotSize = self.config.get('SpotSizes', str(spot.idNo))
-            spotX = self.config.get('SpotX', str(spot.idNo))
-            spotY = self.config.get('SpotY', str(spot.idNo))
-            if spotSize != 'None':
-                spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
 
 
     def writeSpotsToConfig(self):

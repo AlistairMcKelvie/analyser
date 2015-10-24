@@ -1,6 +1,6 @@
 #:import os os
-#:import util analyser_util
-#:import am analyser_math
+#:import util util
+#:import calc calc
 <MainMenuScreen>:
     orientation: 'vertical'
     Button:
@@ -70,7 +70,7 @@
                 id: selectButton
                 text: 'Load'
                 on_release:
-                    app.calib = am.readCalibFile(calibChooser.selection[0])
+                    app.calib = calc.readCalibFile(calibChooser.selection[0])
                     app.writeDir = os.path.dirname(calibChooser.selection[0]) + '/'
                     app.rawFile = app.writeDir + 'raw.csv'
                     app.calibFile = app.writeDir + 'calib.txt'

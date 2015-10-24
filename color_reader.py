@@ -18,14 +18,13 @@ from kivy.properties import StringProperty,\
                             ObjectProperty,\
                             BooleanProperty
 
-from color_reader_spot import ColorReaderSpot
-import analyser_math as am
-
-from analyser_util import channelIndexFromName
 from PIL import Image as PILImage
 from PIL.ImageStat import Stat as imageStat
 import math
 import copy
+
+import calc
+import util
 
 
 class ColorReaderSpot(object):
@@ -48,7 +47,7 @@ class ColorReaderSpot(object):
 
     def updateText(self):
         app = App.get_running_app()
-        channelIndex = channelIndexFromName(app.measuredChannel)
+        channelIndex = util.channelIndexFromName(app.measuredChannel)
         assert self.type in ['std', 'sample']
         if self.type == 'std' and self.conc is not None:
             typeText = 'Std ' + str(self.conc)
@@ -224,7 +223,7 @@ class ColorReader(Widget):
         scanResLow = int(metrics.dp(5))
         scanRangeHigh = int(metrics.dp(2.5))
         scanResHigh = int(metrics.dp(1))
-        channelIndex = channelIndexFromName(channel)
+        channelIndex = util.channelIndexFromName(channel)
         checkedSpots = []
         pos = spot.instGrp.children[2].pos
         for x in range(int(pos[0] - scanRangeLow),
@@ -294,7 +293,7 @@ class ColorReader(Widget):
             return
         spot.addSurroundsSpots()
         scanRange = int(metrics.dp(scanRange))
-        channelIndex = channelIndexFromName(app.measuredChannel)
+        channelIndex = util.channelIndexFromName(app.measuredChannel)
         maxValList = []
         for i in [(5, -1, 0), (7, 0, 1), (9, 1, 0), (11, 0, -1)]:
             colorValsList = []
@@ -357,22 +356,22 @@ class CalibrationScreen(ColorReaderScreen):
         colorReader = self.ids['colorReader']
 
         app.writeSpotsToConfig()
-        app.logger = am.CalcLogger('log', app.calcLog)
+        app.logger = calc.CalcLogger('log', app.calcLog)
         print 'len(app.calibSpots)', len(app.calibSpots)
         app.calibSpots.extend(copy.deepcopy(colorReader.spots))
         print 'len(app.calibSpots)', len(app.calibSpots)
         if app.analysisMode == 'Blank Normalize':
-            app.blankVal = am.calculateBlankVal(app.calibSpots,
+            app.blankVal = calc.calculateBlankVal(app.calibSpots,
                                                 app.measuredChannel,
                                                 app.logger)
         else:
             app.blankVal = None
 
-        app.calib = am.calculateCalibCurve(app.calibSpots, app.logger,
+        app.calib = calc.calculateCalibCurve(app.calibSpots, app.logger,
                                            app.measuredChannel, app.analysisMode,
                                            app.qConfCSV, blankVal=app.blankVal)
         app.calib.writeCalibFile(app.calibFile)
-        am.writeRawData(app.calib, app.rawFile, colorReader.spots,
+        calc.writeRawData(app.calib, app.rawFile, colorReader.spots,
                         app.analysisMode, app.blankVal, app.firstRaw)
         app.firstRaw = False
         app.goto_calib_results()
@@ -392,13 +391,13 @@ class SampleScreen(ColorReaderScreen):
         colorReader = self.ids['colorReader']
 
         app.writeSpotsToConfig()
-        calcConc = am.calculateSampleConc(app.calib, colorReader.spots,
+        calcConc = calc.calculateSampleConc(app.calib, colorReader.spots,
                                           app.analysisMode, app.logger,
                                           self.sampleGrp, app.qConfCSV,
                                           blankVal=app.blankVal)
-        am.writeSamplesFile(app.samplesFile, calcConc,
+        calc.writeSamplesFile(app.samplesFile, calcConc,
                             self.sampleGrp, app.firstSample)
-        am.writeRawData(app.calib, app.rawFile, colorReader.spots,
+        calc.writeRawData(app.calib, app.rawFile, colorReader.spots,
                         app.analysisMode, app.blankVal)
         app.firstSample = False
         self.sampleGrp += 1

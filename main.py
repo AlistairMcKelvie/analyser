@@ -23,9 +23,7 @@ from collections import namedtuple
 from color_reader import ColorReader,\
                          CalibrationScreen,\
                          SampleScreen
-from analyser_display import CalibResultsScreen,\
-                             SampleResultsScreen
-from analyser_util import channelIndexFromName 
+from display import CalibResultsScreen, SampleResultsScreen
 from sendGmail import sendMail
 import shutil
 
@@ -71,7 +69,7 @@ class AnalyserApp(App):
         self.calibrationScreen = CalibrationScreen()
         self.sampleScreen = SampleScreen()
 
-        Builder.load_file('analyser_display.kv')
+        Builder.load_file('display.kv')
         self.calibResultsScreen = CalibResultsScreen()
         self.sampleResultsScreen = SampleResultsScreen()
 

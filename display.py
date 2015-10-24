@@ -4,8 +4,8 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 import kivy.metrics as metrics
 
-from analyser_graph import CalibGraph
-from analyser_util import channelIndexFromName
+import util
+from graph import CalibGraph
 
 class CalibResultsScreen(BoxLayout):
 
@@ -17,7 +17,7 @@ class CalibResultsScreen(BoxLayout):
             calibGraph.drawSpots(calibSpots)
         if calib.status == 'OK':
             calibGraph.drawCurve(calib)
-        colorIndex = channelIndexFromName(measuredChannel)
+        colorIndex = util.channelIndexFromName(measuredChannel)
         valuesTable.clear_widgets()
         assert analysisMode in ['Blank Normalize', 'Surrounds Normalize']
         if analysisMode == 'Blank Normalize':
@@ -59,7 +59,7 @@ class SampleResultsScreen(BoxLayout):
 
     def refreshSampleResults(self, spots, conc, measuredChannel):
         valuesTable = self.ids['valuesTable']
-        colorIndex  = channelIndexFromName(measuredChannel)
+        colorIndex  = util.channelIndexFromName(measuredChannel)
         valuesTable.clear_widgets()
 
         for spot in spots:

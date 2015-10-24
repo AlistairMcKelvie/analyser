@@ -350,6 +350,26 @@ class ColorReaderScreen(Widget):
 
 class CalibrationScreen(ColorReaderScreen):
     tex = ObjectProperty(None, allownone=True)
+    def __init__(self, **kwargs):
+        super(CalibrationScreen, self).__init__(**kwargs)
+        reader = self.ids['colorReader']
+        app = App.get_running_app()
+
+        reader.currentSpotSize = int(app.config.get('technical', 'spotSize'))
+        for spot in reader.spots:
+            spotType = app.config.get('SpotTypes', str(spot.idNo))
+            if spotType != 'None':
+                spot.type = spotType
+            spotConc = app.config.get('SpotConcentrations', str(spot.idNo))
+            if spotConc != 'None':
+                spot.conc = float(spotConc)
+            spotSize = app.config.get('SpotSizes', str(spot.idNo))
+            spotX = app.config.get('SpotX', str(spot.idNo))
+            spotY = app.config.get('SpotY', str(spot.idNo))
+            if spotSize != 'None':
+                spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
+
+
 
     def acceptConfig(self):
         app = App.get_running_app()

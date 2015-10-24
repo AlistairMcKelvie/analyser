@@ -164,7 +164,7 @@ class ColorReader(Widget):
                 self.readSpot(self.analysisImage, spot)
                 self.scanSurroundsSpots(self.analysisImage, spot)
                 buttonStr = spot.updateText()
-                self.spotButtonText[spot.idNo - 1] = buttonStr 
+                self.spotButtonText[spot.idNo - 1] = buttonStr
 
 
     def updateSpotSize(self, spotSize):
@@ -253,7 +253,7 @@ class ColorReader(Widget):
         self.readSpot(self.analysisImage, spot)
         self.scanSurroundsSpots(self.analysisImage, spot)
         buttonStr = spot.updateText()
-        self.spotButtonText[spot.idNo - 1] = buttonStr 
+        self.spotButtonText[spot.idNo - 1] = buttonStr
 
 
     def moveBox(self, *args):

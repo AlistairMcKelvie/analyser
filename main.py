@@ -140,21 +140,8 @@ class AnalyserApp(App):
 
 
     def goto_sample_results(self, spots, conc):
-        valuesTable = self.sampleResultsScreen.ids['valuesTable']
-        colorIndex  = channelIndexFromName(self.measuredChannel)
-        valuesTable.clear_widgets()
-        for spot in spots:
-            row = BoxLayout()
-            valuesTable.add_widget(row)
-            row.add_widget(Label(text=str(spot.idNo), font_size=metrics.dp(15)))
-            row.add_widget(Label(text=str(int(round(spot.colorVal[colorIndex]))),
-                                 font_size=metrics.dp(15)))
-            row.add_widget(Label(text='{:.3f}'.format(spot.absorb),
-                                 font_size=metrics.dp(15)))
-        valuesTable.height = len(spots) * metrics.dp(20)
-
-        self.sampleResultsScreen.ids['calcConc'].text =\
-            'Calculated Concentration: {:.3f}'.format(conc)
+        self.sampleResultsScreen.refreshSampleResults(spots, conc,
+                                                      self.measuredChannel)
         self.clearAllWidgets()
         Window.add_widget(self.sampleResultsScreen)
 

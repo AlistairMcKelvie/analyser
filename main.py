@@ -125,9 +125,6 @@ class AnalyserApp(App):
 
 
     def goto_color_reader_screen(self, imageFile, *args):
-        print 'in color reader'
-        assert '.jpg' in imageFile or '.png' in imageFile,\
-            imageFile + ' not a valid image file, must be jpg or png'
         assert (self.targetReaderScreen == 'calib' or
                 self.targetReaderScreen == 'sample'),\
             'targetReaderScreen is set to {}, this is not valid option.'\
@@ -136,53 +133,10 @@ class AnalyserApp(App):
             readerScreen = self.calibrationScreen
         elif self.targetReaderScreen == 'sample':
             readerScreen = self.sampleScreen
-        reader = readerScreen.ids['colorReader']
 
-        # color reader initialization
-        reader.imageFile = imageFile
-        tex = Image(imageFile).texture
-        self.addTextureAndResizeColorReader(tex, readerScreen)
+        readerScreen.updateImage(imageFile)
         self.clearAllWidgets()
         Window.add_widget(readerScreen)
-        reader.initialDraw()
-
-
-    def addTextureAndResizeColorReader(self, tex, readerScreen):
-        windowSize = Window.size
-        print 'windowSize', windowSize
-        windowRatio = windowSize[0] / float(windowSize[1])
-        print 'windowRatio', windowRatio
-        texSize = tex.size
-        print 'texSize', tex.size
-        texRatio = texSize[0] / float(texSize[1])
-        print 'texRatio', texRatio
-
-        if texRatio > windowRatio:
-            #texture is width constrained
-            width = windowSize[0] * 0.8
-            height = width / texRatio
-            x = windowSize[0] * 0.2
-            y = windowSize[1] * 0.2 + (windowSize[1] * 0.8 - height) / 2 
-        else:
-            #texture is height constrained
-            height = windowSize[1] * 0.8
-            width = height * texRatio
-            x = windowSize[0] * 0.2 + (windowSize[0] * 0.8 - width) / 2
-            y = windowSize[1] * 0.2
-
-        #size and position texture
-        for inst in readerScreen.canvas.children:
-            if str(type(inst)) == "<type 'kivy.graphics.vertex_instructions.Rectangle'>":
-                inst.size = (width, height)
-                inst.pos = (x,y)
-                inst.texture = tex
-
-        #size and position color reader
-        colorReader = readerScreen.ids['colorReader']
-        colorReader.width = width
-        colorReader.height = height
-        colorReader.x = x
-        colorReader.y = y
 
 
     def writeSpotsToConfig(self):

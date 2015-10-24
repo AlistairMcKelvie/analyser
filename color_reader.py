@@ -344,11 +344,7 @@ class ColorReader(Widget):
         self.spotButtonText[spot.idNo - 1] = buttonStr
 
 
-class ColorReaderScreen(Widget):
-    pass
-
-
-class CalibrationScreen(ColorReaderScreen):
+class CalibrationScreen(Widget):
     tex = ObjectProperty(None, allownone=True)
     def __init__(self, **kwargs):
         super(CalibrationScreen, self).__init__(**kwargs)
@@ -368,8 +364,6 @@ class CalibrationScreen(ColorReaderScreen):
             spotY = app.config.get('SpotY', str(spot.idNo))
             if spotSize != 'None':
                 spot.addMainSpot(float(spotSize), float(spotX), float(spotY))
-
-
 
     def acceptCalib(self):
         app = App.get_running_app()
@@ -397,7 +391,7 @@ class CalibrationScreen(ColorReaderScreen):
         app.goto_calib_results()
 
 
-class SampleScreen(ColorReaderScreen):
+class SampleScreen(Widget):
     tex = ObjectProperty(None, allownone=True)
     sampleGrp = NumericProperty(1)
 

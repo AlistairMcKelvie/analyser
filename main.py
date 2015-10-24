@@ -187,18 +187,6 @@ class AnalyserApp(App):
         colorReader.y = y
 
 
-    def goto_graph(self):
-        colorReader = self.colorReaderScreen.ids['colorReader']
-        if [i.type for i in colorReader.spots].count('Blank') == 0:
-            print 'No blank!'
-        else:
-            self.graphScreen.ids['graph'].updateGraph(
-                    [spot.conc for spot in colorReader.spots],
-                    [spot.colorVal for spot in colorReader.spots])
-        self.clearAllWidgets()
-        Window.add_widget(self.graphScreen)
-
-
     def initializeCalib(self):
         reader = self.calibrationScreen.ids['colorReader']
         reader.currentSpotSize = int(self.config.get('technical', 'spotSize'))

@@ -59,7 +59,7 @@
         size: root.size
         orientation: 'vertical'
         FileChooserListView:
-            id: calibChooser
+            id: fileChooser
             rootpath: app.user_data_dir
             dirselect: True
             size_hint_y: 0.9
@@ -70,18 +70,18 @@
                 id: selectButton
                 text: 'Load'
                 on_release:
-                    app.calib = calc.readCalibFile(calibChooser.selection[0])
-                    app.writeDir = os.path.dirname(calibChooser.selection[0]) + '/'
+                    app.calib = calc.readCalibFile(fileChooser.selection[0])
+                    app.writeDir = os.path.dirname(fileChooser.selection[0]) + '/'
                     app.rawFile = app.writeDir + 'raw.csv'
                     app.calibFile = app.writeDir + 'calib.txt'
                     app.samplesFile = app.writeDir + 'samples.csv' 
                     app.goto_image_menu()
             Button:
                 text: 'Back'
-                on_release: app.goto_main_menu() 
+                on_release: app.goto_main_menu()
             Button:
                 text: 'Delete Set'
-                on_release: app.delete_data_set()
+                on_release: root.delete_data_set(fileChooser.selection[0])
 
 
 <FileChooserScreen>:

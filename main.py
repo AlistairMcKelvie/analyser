@@ -45,7 +45,13 @@ class FileChooserScreen(Widget):
 
 
 class CalibChooserScreen(Widget):
-    pass
+
+    def delete_data_set(self, selection):
+        try:
+            shutil.rmtree(selection)
+            self.ids['fileChooser']._update_files()
+        except Exception as e:
+            pass
 
 
 class AnalyserApp(App):

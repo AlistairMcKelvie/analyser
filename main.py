@@ -87,9 +87,9 @@ class AnalyserApp(App):
 
 
     def goto_calib_results(self):
-        self.calibResultsScreen.CalibResults(self.calibSpots, self.calib,
-                                             self.blankVal, self.analysisMode,
-                                             self.measuredChannel)
+        self.calibResultsScreen.refresh(self.calibSpots, self.calib,
+                                        self.blankVal, self.analysisMode,
+                                        self.measuredChannel)
         self.newScreen(self.calibResultsScreen)
 
 
@@ -182,10 +182,10 @@ class AnalyserApp(App):
                  self.writeDir)
 
 
-    def newScreen(screen):
+    def newScreen(self, screen):
         for widget in Window.children:
             Window.remove_widget(widget)
-        Window.add_widget(self.calibChooserScreen)
+        Window.add_widget(screen)
 
 
     def build_settings(self, settings):

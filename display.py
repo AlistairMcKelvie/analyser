@@ -9,8 +9,8 @@ from graph import CalibGraph
 
 class CalibResultsScreen(BoxLayout):
 
-    def refreshCalibResults(self, calibSpots, calib, blankVal,
-                             analysisMode, measuredChannel):
+    def refresh(self, calibSpots, calib, blankVal,
+                analysisMode, measuredChannel):
         valuesTable = self.ids['valuesTable']
         calibGraph = self.ids['calibGraph']
         if calib.status in ['OK', 'NotEnoughConcentrations']:
@@ -57,7 +57,7 @@ class CalibResultsScreen(BoxLayout):
 
 class SampleResultsScreen(BoxLayout):
 
-    def refreshSampleResults(self, spots, conc, measuredChannel):
+    def refresh(self, spots, conc, measuredChannel):
         valuesTable = self.ids['valuesTable']
         colorIndex  = util.channelIndexFromName(measuredChannel)
         valuesTable.clear_widgets()

@@ -88,16 +88,15 @@ class AnalyserApp(App):
 
 
     def goto_calib_results(self):
-        self.calibResultsScreen.refreshCalibResults(self.calibSpots, self.calib,
-                                                    self.blankVal, self.analysisMode,
-                                                    self.measuredChannel)
+        self.calibResultsScreen.CalibResults(self.calibSpots, self.calib,
+                                             self.blankVal, self.analysisMode,
+                                             self.measuredChannel)
         self.clearAllWidgets()
         Window.add_widget(self.calibResultsScreen)
 
 
     def goto_sample_results(self, spots, conc):
-        self.sampleResultsScreen.refreshSampleResults(spots, conc,
-                                                      self.measuredChannel)
+        self.sampleResultsScreen.refresh(spots, conc, self.measuredChannel)
         self.clearAllWidgets()
         Window.add_widget(self.sampleResultsScreen)
 

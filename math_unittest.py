@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import unittest
-from analyser_math import percentile
+from calc import percentile
 
 class test_percentile(unittest.TestCase):
     def test_1(self):
@@ -13,8 +13,8 @@ class test_percentile(unittest.TestCase):
                 10, 10, 10]
         p = 25
         self.assertAlmostEqual(5, percentile(p, data))
-    
-    
+
+
     def test_2(self):
         data = [4, 4,
                 5, 5, 5, 5,

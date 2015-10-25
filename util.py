@@ -34,7 +34,7 @@ def take_photo(filepath):
 def camera_callback(imageFile, **kwargs):
     app = App.get_running_app()
     print 'got camera callback'
-    PILImage.open(imageFile).resize((800,600)).save(imageFile)
+    PILImage.open(imageFile).resize((800, 600)).save(imageFile)
     Clock.schedule_once(partial(app.goto_color_reader_screen, imageFile, 0.3))
     return False
 
@@ -47,7 +47,7 @@ class MsgPopup(Popup):
 
 class CalibrationCurve(object):
     def __init__(self, M=None, C=None, R2=None, channel=None,
-                 pointsCount=0, file=None, status='OK'):
+                 pointsCount=None, file=None, status='OK'):
         assert status in ['OK', 'NoBlank', 'NotEnoughConcentrations']
         if file is not None:
             assert M is None
@@ -79,7 +79,6 @@ class CalibrationCurve(object):
                 self.channel = f.next().split()[1]
                 self.pointsCount = int(f.next().split()[1])
 
-
     def writeCalibFile(self, calibFile):
         with open(calibFile, 'wb') as f:
             if self.status == 'OK':
@@ -91,5 +90,3 @@ class CalibrationCurve(object):
                 f.write('PointsCount: {}\n'.format(self.pointsCount))
             else:
                 f.write(self.status + '\n')
-
-

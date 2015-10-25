@@ -7,6 +7,7 @@ import kivy.metrics as metrics
 import util
 from graph import CalibGraph
 
+
 class CalibResultsScreen(BoxLayout):
 
     def refresh(self, calibSpots, calib, blankVal,
@@ -50,8 +51,8 @@ class CalibResultsScreen(BoxLayout):
             calibEqn = ('Cannot calculate calibration, no blank value present.\n'
                         'Please read some blank samples.')
         else:
-            calibEqn = (u'Concentration = {0:.3f}\u03b1 + {1:.3f}      R\u00b2 = {2:.4f}'
-                        ).format(calib.M, calib.C, calib.R2)
+            calibEqn = (u'Concentration = {0:.3f}\u03b1 + {1:.3f}      '
+                        u'R\u00b2 = {2:.4f}').format(calib.M, calib.C, calib.R2)
         self.ids['calibEqn'].text = calibEqn
 
 
@@ -59,7 +60,7 @@ class SampleResultsScreen(BoxLayout):
 
     def refresh(self, spots, conc, measuredChannel):
         valuesTable = self.ids['valuesTable']
-        colorIndex  = util.channelIndexFromName(measuredChannel)
+        colorIndex = util.channelIndexFromName(measuredChannel)
         valuesTable.clear_widgets()
 
         for spot in spots:
@@ -74,4 +75,3 @@ class SampleResultsScreen(BoxLayout):
 
         self.ids['calcConc'].text =\
             'Calculated Concentration: {:.3f}'.format(conc)
-

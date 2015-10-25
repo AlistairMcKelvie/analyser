@@ -28,6 +28,8 @@ from sendGmail import sendMail
 import shutil
 from datetime import datetime
 
+import calc
+import util
 
 class MainMenuScreen(BoxLayout):
     pass
@@ -117,7 +119,6 @@ class AnalyserApp(App):
                                         self.measuredChannel)
         self.newScreen(self.calibResultsScreen)
 
-
     def goto_sample_results(self, spots, conc):
         self.sampleResultsScreen.refresh(spots, conc, self.measuredChannel)
         self.newScreen(self.sampleResultsScreen)
@@ -139,7 +140,6 @@ class AnalyserApp(App):
 
         readerScreen.updateImage(imageFile)
         self.newScreen(readerScreen)
-
 
     def writeSpotsToConfig(self):
         print 'writing to config'
@@ -163,7 +163,6 @@ class AnalyserApp(App):
                                 int(graphicsInstructs[2].pos[1]))
         self.config.write()
 
-
     def build_config(self, config):
         config.setdefaults('kivy', {'log_dir': self.user_data_dir})
         config.setdefaults('technical', {'spotCount': 15,
@@ -182,7 +181,6 @@ class AnalyserApp(App):
         config.setdefaults('SpotX', noneDict)
         config.setdefaults('SpotY', noneDict)
 
-
     def sendEmail(self):
         sendMail([self.config.get('email', 'address')],
                  ('Spot analyser files from {}'
@@ -190,7 +188,6 @@ class AnalyserApp(App):
                  ('Spot analyser files from {}'
                   ).format(self.writeDir.split('/')[-2].split('\\')[-1]),
                  self.writeDir)
-
 
     def newScreen(self, screen):
         for widget in Window.children:
@@ -214,14 +211,6 @@ class AnalyserApp(App):
                 self.analysisMode = self.config.get('technical',
                                                     'analysisMode')
 
-
-    def on_pause(self):
-        return True
-
-
-    def on_resume(self):
-        pass
-
     def createDataSet(self):
         setDataDir = '{0}/{1:%Y%m%d_%H:%M}/'.format(self.dataSetDir,
                                                     datetime.now())
@@ -233,7 +222,20 @@ class AnalyserApp(App):
             os.mkdir(setDataDir)
         return setDataDir
 
+    def selectDataSet(self, pathList):
+        if len(pathList) == 0:
+            return
+        self.writeDir = pathList[0] + '/'
+        self.calib = util.CalibrationCurve(file=self.calibFile)
+        self.logger = calc.CalcLogger('log', self.calcLog)
+        self.goto_image_menu()
+
+    def on_pause(self):
+        return True
+
+    def on_resume(self):
+        pass
+
 
 if __name__ == '__main__':
     AnalyserApp().run()
-

@@ -15,6 +15,7 @@
         on_release:
             app.targetReaderScreen = 'calib'
             app.writeDir = app.createDataSet()
+            app.logger = calc.CalcLogger('log', app.calcLog)
             app.goto_image_menu()
     Button:
         text: 'Load Old Calibration Set'
@@ -66,10 +67,7 @@
             Button:
                 id: selectButton
                 text: 'Load'
-                on_release:
-                    app.calib = calc.readCalibFile(fileChooser.selection[0])
-                    app.writeDir = os.path.dirname(fileChooser.selection[0]) + '/'
-                    app.goto_image_menu()
+                on_release: app.selectDataSet(fileChooser.selection)
             Button:
                 text: 'Back'
                 on_release: app.newScreen(app.mainMenuScreen)

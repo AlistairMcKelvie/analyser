@@ -41,7 +41,7 @@ class GraphScreen(Widget):
     pass
 
 
-class FileChooserScreen(Widget):
+class StockImageScreen(Widget):
     pass
 
 
@@ -71,7 +71,7 @@ class AnalyserApp(App):
 
         self.mainMenuScreen = MainMenuScreen()
         self.imageMenuScreen = ImageMenuScreen()
-        self.fileChooserScreen = FileChooserScreen()
+        self.stockImageScreen = StockImageScreen()
         self.calibChooserScreen = CalibChooserScreen()
 
         Builder.load_file('color_reader.kv')
@@ -107,9 +107,9 @@ class AnalyserApp(App):
     def calcLog(self):
         return self.writeDir + 'calc_log.txt'
 
-    def goto_main_menu(self):
-        self.newScreen(self.mainMenuScreen)
-
+    @property
+    def stockImageDir(self):
+        return os.getcwd() + '/stock_images'
 
     def goto_calib_results(self):
         self.calibResultsScreen.refresh(self.calibSpots, self.calib,
@@ -122,22 +122,10 @@ class AnalyserApp(App):
         self.sampleResultsScreen.refresh(spots, conc, self.measuredChannel)
         self.newScreen(self.sampleResultsScreen)
 
-
     def goto_image_menu(self):
         if self.targetReaderScreen == 'calib':
             self.calibNo += 1
         self.newScreen(self.imageMenuScreen)
-
-
-    def goto_get_stock_image(self):
-        self.fileChooserScreen.ids['fileChooser'].path =\
-            os.getcwd() + '/stock_images'
-        self.newScreen(self.fileChooserScreen)
-
-
-    def goto_get_old_calib(self):
-        self.newScreen(self.calibChooserScreen)
-
 
     def goto_color_reader_screen(self, imageFile, *args):
         assert (self.targetReaderScreen == 'calib' or
@@ -209,10 +197,8 @@ class AnalyserApp(App):
             Window.remove_widget(widget)
         Window.add_widget(screen)
 
-
     def build_settings(self, settings):
         settings.add_json_panel('Settings', self.config, 'settings.json')
-
 
     def on_config_change(self, config, section, key, value):
         print config, section, key, value
@@ -239,7 +225,6 @@ class AnalyserApp(App):
     def createDataSet(self):
         setDataDir = '{0}/{1:%Y%m%d_%H:%M}/'.format(self.dataSetDir,
                                                     datetime.now())
-        # TODO handle data error if dir already exists
         try:
             os.mkdir(setDataDir)
         except OSError:

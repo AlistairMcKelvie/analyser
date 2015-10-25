@@ -24,7 +24,7 @@
         valign: 'middle'
         on_release:
             app.targetReaderScreen = 'sample'
-            app.goto_get_old_calib()
+            app.newScreen(app.calibChooserScreen)
 
 
 <ImageMenuScreen>:
@@ -38,7 +38,7 @@
         on_release:
             if app.targetReaderScreen == 'calib':filepath=app.writeDir+'calib_{}.jpg'.format(app.calibNo)
             else:filepath = app.writeDir + 'sample_{}.jpg'.format(app.sampleScreen.ids['colorReader'].spots[0].sampleGrp)
-            app.takenPhoto = filepath
+            app.takenPhoto = filepath #is this ever used?
             util.take_photo(filepath)
     Button:
         text: 'Get Stock Image'
@@ -46,7 +46,8 @@
         font_size: '30sp'
         halign: 'center'
         valign: 'middle'
-        on_release: app.goto_get_stock_image()
+        on_release:
+            app.newScreen(app.stockImageScreen)
 
 
 <CalibChooserScreen>:
@@ -68,19 +69,16 @@
                 on_release:
                     app.calib = calc.readCalibFile(fileChooser.selection[0])
                     app.writeDir = os.path.dirname(fileChooser.selection[0]) + '/'
-                    app.rawFile = app.writeDir + 'raw.csv'
-                    app.calibFile = app.writeDir + 'calib.txt'
-                    app.samplesFile = app.writeDir + 'samples.csv' 
                     app.goto_image_menu()
             Button:
                 text: 'Back'
-                on_release: app.goto_main_menu()
+                on_release: app.newScreen(app.mainMenuScreen)
             Button:
                 text: 'Delete Set'
                 on_release: root.delete_data_set(fileChooser.selection[0])
 
 
-<FileChooserScreen>:
+<StockImageScreen>:
     BoxLayout:
         id: fileChooserScreen
         size: root.size
@@ -88,7 +86,8 @@
         FileChooserListView:
             id: fileChooser
             size_hint_y: 0.9
-            path: '.'
+            root: app.stockImageDir
+            path: app.stockImageDir
         Button:
             id: selectButton
             size_hint_y: 0.1

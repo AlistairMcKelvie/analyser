@@ -56,16 +56,6 @@ def create_new_data_set(dirName):
         os.mkdir(setDataDir)
     return setDataDir
 
-
-def delete_data_set():
-    app = App.get_running_app()
-    fileChooser = app.calibChooserScreen.ids['calibChooser']
-    try:
-        shutil.rmtree(fileChooser.selection[0])
-        fileChooser._update_files()
-    except Exception as e:
-        pass
-
 class CalibrationCurve(object):
     def __init__(self, M=None, C=None, R2=None, channel=None,
                  pointsCount=0, file=None, status='OK'):

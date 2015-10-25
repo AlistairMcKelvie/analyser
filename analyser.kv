@@ -15,10 +15,6 @@
         on_release:
             app.targetReaderScreen = 'calib'
             app.writeDir = app.createDataSet()
-            app.rawFile = app.writeDir + 'raw.csv'
-            app.calibFile = app.writeDir + 'calib.txt'
-            app.samplesFile = app.writeDir + 'samples.csv'
-            app.calcLog = app.writeDir + 'calc_log.txt'
             app.goto_image_menu()
     Button:
         text: 'Load Old Calibration Set'

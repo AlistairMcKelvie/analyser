@@ -92,8 +92,20 @@ class AnalyserApp(App):
         return self.mainMenuScreen
 
     @property
-    def self.rawFile(self):
+    def rawFile(self):
         return self.writeDir + 'raw.csv'
+
+    @property
+    def calibFile(self):
+        return self.writeDir + 'calib.txt'
+
+    @property
+    def samplesFile(self):
+        return self.writeDir + 'samples.csv'
+
+    @property
+    def calcLog(self):
+        return self.writeDir + 'calc_log.txt'
 
     def goto_main_menu(self):
         self.newScreen(self.mainMenuScreen)
@@ -231,7 +243,7 @@ class AnalyserApp(App):
         try:
             os.mkdir(setDataDir)
         except OSError:
-            setDataDir = '{0}/{1:%Y%m%d_%H:%M:%S}/'.format(dirName,
+            setDataDir = '{0}/{1:%Y%m%d_%H:%M:%S}/'.format(self.dataSetDir,
                                                            datetime.now())
             os.mkdir(setDataDir)
         return setDataDir

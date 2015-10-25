@@ -63,7 +63,7 @@
             rootpath: app.user_data_dir
             dirselect: True
             size_hint_y: 0.9
-            path: '.'
+            path: app.oldDataSetDir
         BoxLayout:
             size_hint_y: 0.1
             Button:
@@ -82,8 +82,8 @@
             Button:
                 text: 'Delete Set'
                 on_release: app.delete_data_set()
- 
- 
+
+
 <FileChooserScreen>:
     BoxLayout:
         id: fileChooserScreen
@@ -100,11 +100,11 @@
             on_release:
                 print 'filechooser selection', fileChooser.selection[0]
                 app.goto_color_reader_screen(fileChooser.selection[0])
- 
- 
+
+
 <MsgPopup>:
     size_hint: 0.7, 0.4
-    title: "Attention"    
+    title: "Attention"
     BoxLayout:
         orientation: 'vertical'
         padding: 10

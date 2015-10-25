@@ -60,6 +60,8 @@ class AnalyserApp(App):
 
     def build(self):
         '''Runs when app starts'''
+        self.oldDataSetDir = self.user_data_dir
+
         self.mainMenuScreen = MainMenuScreen()
         self.imageMenuScreen = ImageMenuScreen()
         self.fileChooserScreen = FileChooserScreen()
@@ -79,6 +81,7 @@ class AnalyserApp(App):
         self.qConfCSV = 'Q_Crit_Vals.csv'
         self.measuredChannel = self.config.get('technical', 'measuredChannel')
         self.analysisMode = self.config.get('technical', 'analysisMode')
+
         return self.mainMenuScreen
 
 
@@ -111,9 +114,6 @@ class AnalyserApp(App):
 
 
     def goto_get_old_calib(self):
-        self.calibChooserScreen.ids['calibChooser'].path =\
-            self.user_data_dir
-        print self.calibChooserScreen.ids['calibChooser'].path
         self.newScreen(self.calibChooserScreen)
 
 

@@ -66,7 +66,7 @@ class AnalyserApp(App):
 
     def build(self):
         '''Runs when app starts'''
-        self.oldDataSetDir = self.user_data_dir
+        self.dataSetDir = self.user_data_dir
 
         self.mainMenuScreen = MainMenuScreen()
         self.imageMenuScreen = ImageMenuScreen()

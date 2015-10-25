@@ -91,6 +91,9 @@ class AnalyserApp(App):
 
         return self.mainMenuScreen
 
+    @property
+    def self.rawFile(self):
+        return self.writeDir + 'raw.csv'
 
     def goto_main_menu(self):
         self.newScreen(self.mainMenuScreen)

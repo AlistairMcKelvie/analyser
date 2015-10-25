@@ -83,44 +83,38 @@ class AnalyserApp(App):
 
 
     def goto_main_menu(self):
-        self.clearAllWidgets()
-        Window.add_widget(self.mainMenuScreen)
+        self.newScreen(self.mainMenuScreen)
 
 
     def goto_calib_results(self):
         self.calibResultsScreen.CalibResults(self.calibSpots, self.calib,
                                              self.blankVal, self.analysisMode,
                                              self.measuredChannel)
-        self.clearAllWidgets()
-        Window.add_widget(self.calibResultsScreen)
+        self.newScreen(self.calibResultsScreen)
 
 
     def goto_sample_results(self, spots, conc):
         self.sampleResultsScreen.refresh(spots, conc, self.measuredChannel)
-        self.clearAllWidgets()
-        Window.add_widget(self.sampleResultsScreen)
+        self.newScreen(self.sampleResultsScreen)
 
 
     def goto_image_menu(self):
         if self.targetReaderScreen == 'calib':
             self.calibNo += 1
-        self.clearAllWidgets()
-        Window.add_widget(self.imageMenuScreen)
+        self.newScreen(self.imageMenuScreen)
 
 
     def goto_get_stock_image(self):
         self.fileChooserScreen.ids['fileChooser'].path =\
             os.getcwd() + '/stock_images'
-        self.clearAllWidgets()
-        Window.add_widget(self.fileChooserScreen)
+        self.newScreen(self.fileChooserScreen)
 
 
     def goto_get_old_calib(self):
         self.calibChooserScreen.ids['calibChooser'].path =\
             self.user_data_dir
         print self.calibChooserScreen.ids['calibChooser'].path
-        self.clearAllWidgets()
-        Window.add_widget(self.calibChooserScreen)
+        self.newScreen(self.calibChooserScreen)
 
 
     def goto_color_reader_screen(self, imageFile, *args):
@@ -134,8 +128,7 @@ class AnalyserApp(App):
             readerScreen = self.sampleScreen
 
         readerScreen.updateImage(imageFile)
-        self.clearAllWidgets()
-        Window.add_widget(readerScreen)
+        self.newScreen(readerScreen)
 
 
     def writeSpotsToConfig(self):
@@ -189,9 +182,10 @@ class AnalyserApp(App):
                  self.writeDir)
 
 
-    def clearAllWidgets(self):
+    def newScreen(screen):
         for widget in Window.children:
             Window.remove_widget(widget)
+        Window.add_widget(self.calibChooserScreen)
 
 
     def build_settings(self, settings):

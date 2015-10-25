@@ -14,7 +14,7 @@
         valign: 'middle'
         on_release:
             app.targetReaderScreen = 'calib'
-            app.writeDir = util.create_new_data_set(app.user_data_dir)
+            app.writeDir = app.createDataSet()
             app.rawFile = app.writeDir + 'raw.csv'
             app.calibFile = app.writeDir + 'calib.txt'
             app.samplesFile = app.writeDir + 'samples.csv'

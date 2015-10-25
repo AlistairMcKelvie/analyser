@@ -5,7 +5,6 @@ from kivy.uix.popup import Popup
 from plyer import camera
 
 from functools import partial
-from datetime import datetime
 from PIL import Image as PILImage
 import os
 from types import *
@@ -45,16 +44,6 @@ class MsgPopup(Popup):
         super(MsgPopup, self).__init__()
         self.ids.message_label.text = msg
 
-
-def create_new_data_set(dirName):
-    setDataDir = '{0}/{1:%Y%m%d_%H:%M}/'.format(dirName, datetime.now())
-    # TODO handle data error if dir already exists
-    try:
-        os.mkdir(setDataDir)
-    except OSError:
-        setDataDir = '{0}/{1:%Y%m%d_%H:%M:%S}/'.format(dirName, datetime.now())
-        os.mkdir(setDataDir)
-    return setDataDir
 
 class CalibrationCurve(object):
     def __init__(self, M=None, C=None, R2=None, channel=None,

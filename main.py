@@ -26,6 +26,7 @@ from color_reader import ColorReader,\
 from display import CalibResultsScreen, SampleResultsScreen
 from sendGmail import sendMail
 import shutil
+from datetime import datetime
 
 
 class MainMenuScreen(BoxLayout):
@@ -219,6 +220,18 @@ class AnalyserApp(App):
 
     def on_resume(self):
         pass
+
+    def createDataSet(self):
+        setDataDir = '{0}/{1:%Y%m%d_%H:%M}/'.format(self.dataSetDir,
+                                                    datetime.now())
+        # TODO handle data error if dir already exists
+        try:
+            os.mkdir(setDataDir)
+        except OSError:
+            setDataDir = '{0}/{1:%Y%m%d_%H:%M:%S}/'.format(dirName,
+                                                           datetime.now())
+            os.mkdir(setDataDir)
+        return setDataDir
 
 
 if __name__ == '__main__':

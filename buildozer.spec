@@ -1,13 +1,13 @@
 [app]
 
 # (str) Title of your application
-title = Analyser
+title = Micropad Analyser
 
 # (str) Package name
-package.name = an1
+package.name = micropadanalyser
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = org.antest
+package.domain = com.alistairmckelvie
 
 # (str) Source code where the main.py live
 source.dir = .
@@ -29,7 +29,7 @@ source.include_exts = py,png,jpg,kv,atlas,csv,json
 #version.filename = %(source.dir)s/main.py
 
 # (str) Application versioning (method 2)
-version = 1.9.0
+version = 0.1
 
 # (list) Application requirements
 # comma seperated e.g. requirements = sqlite3,kivy
@@ -42,7 +42,7 @@ requirements = openssl, pil, plyer, kivy
 #presplash.filename = %(source.dir)s/data/presplash.png
 
 # (str) Icon of the application
-#icon.filename = %(source.dir)s/data/icon.png
+icon.filename = %(source.dir)s/production_images/icon.png
 
 # (str) Supported orientation (one of landscape, portrait or all)
 orientation = landscape

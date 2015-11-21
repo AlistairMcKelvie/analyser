@@ -4,5 +4,6 @@ analyser.ini
 bin
 *.swp
 .buildozer/android
+.buildozer/state.db
 .buildozer/venv
 .DS_Store

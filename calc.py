@@ -1,8 +1,7 @@
 import math
 import csv
 from collections import namedtuple, OrderedDict
-from color_reader import ColorReaderSpot
-from analyser_util import channelIndexFromName 
+from util import channelIndexFromName, CalibrationCurve
 
 
 class CalcLogger(object):
@@ -38,7 +37,7 @@ def calculateConc(calib, absorb):
     '''Calculate a concentration based on previously calculated 
     calibration and an absorbance value. Returns None if calib is not
     calculated, and float otherwise.'''
-    if calib is None:
+    if calib.status != 'OK':
         return None
     else:
         result = (absorb - calib.C) / calib.M
@@ -50,7 +49,7 @@ def calculateCalibCurve(spots, logger, measuredChannel, analysisMode,
     '''Calculates a calibation curve based on a list of spots.
 
     spots -- a list of ColorReaderSpot objects, must contain spots with
-    different conc values, or 'NotEnoughConcentrations' runtime error will be raised.
+    different conc values, or 'NotEnoughConcentrations' will be returned.
     logger -- a CalcLogger object for doing logging.
     measuredChannel -- 'red'/'green'/'blue'; color channel being used for analysis.
     analysisMode -- 'Blank Normalize' or 'Surrounds Normalize'; technique for
@@ -59,7 +58,7 @@ def calculateCalibCurve(spots, logger, measuredChannel, analysisMode,
     qConfCSV -- path to csv containing the table of q test confidence values
     CL - required q test confidence percent for exclusion of a spot, (default - 90)
     blankVal -- mean color value of the blank spots, not used if mode is
-    'Surrounds Normalize', otherwise will raise 'NoBlank' RuntimeError if not present.'''
+    'Surrounds Normalize', otherwise 'NoBlank' will be returned.'''
     log = logger.log
     channelIndex = channelIndexFromName(measuredChannel)
 
@@ -77,7 +76,7 @@ def calculateCalibCurve(spots, logger, measuredChannel, analysisMode,
     assert analysisMode in ['Blank Normalize', 'Surrounds Normalize']
     if analysisMode == 'Blank Normalize':
         if blankVal is None:
-            raise RuntimeError('NoBlankError')
+            return CalibrationCurve(status='NoBlank')
 
     for conc in spotConcDict:
         log(u'calculating \u03b1 values')
@@ -119,7 +118,7 @@ def calculateCalibCurve(spots, logger, measuredChannel, analysisMode,
     if N < 2:
         log('Not enough different calibration '
             'concentrations to calculate curve')
-        raise RuntimeError('NotEnoughConcentrations')
+        return CalibrationCurve(status='NotEnoughConcentrations')
     else:
         log('Calculating LSR')
         log(u'conc = M\u03b1 + C')
@@ -158,7 +157,8 @@ def calculateCalibCurve(spots, logger, measuredChannel, analysisMode,
         R2 = 1 - SSres / SStot
         log(u'R\u00b2 = {:.5f}'.format(R2))
         Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'channel'])
-        return Calib(M=M, C=C, R2=R2, channel=measuredChannel)
+        return CalibrationCurve(M=M, C=C, R2=R2, channel=measuredChannel,
+                                pointsCount=len(spots))
 
 
 def calculateBlankVal(spots, measuredChannel, logger):
@@ -181,13 +181,12 @@ def calculateBlankVal(spots, measuredChannel, logger):
         return None
 
 
-def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=None, firstWrite=False):
+def writeRawData(calib, rawFile, spots, analysisMode, blankVal=None, firstWrite=False):
     '''Writes out the raw data from a list of spots.
 
-    calib -- a namedtuple Calib object which contains data on the calibraion curve.
+    calib -- a namedtuple CalibrationCurve object which contains data on the calibration curve.
     rawFile -- path of the file to write to.
     spots -- a list of spots to write out.
-    measuredChannel -- 'red'/'green'/'blue'; color channel being used for analysis.
     analysisMode -- 'Blank Normalize' or 'Surrounds Normalize'; technique for
     normalizing sample values, dividing color value by the color value of the
     blank, or by dividing by the color value of an area surrounding the main spot.
@@ -196,7 +195,6 @@ def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=
     'Surrounds Normalize', otherwise will raise 'NoBlank' if not present.
     firstWrite -- whether this is the first time writing to the file, will overwrite
     if true, otherwise will append (default - False).'''
-    channelIndex = channelIndexFromName(measuredChannel)
     fieldNames = ['type', 'sample_group', 'sample_no',
                   'known_concentration', 'calculated_concentration',
                   'red','green', 'blue', 'measured_channel']
@@ -205,10 +203,10 @@ def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=
             csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
             csvWriter.writeheader()
 
-    assert analysisMode in ['Blank Normalize', 'Surrounds Normalize']
-    if analysisMode == 'Blank Normalize':
-        if blankVal is None:
-            raise RuntimeError('NoBlank')
+    try:
+        assert analysisMode in ['Blank Normalize', 'Surrounds Normalize']
+    except:
+        import ipdb;ipdb.set_trace()
 
     with open(rawFile, 'ab') as sFile:
         csvWriter = csv.DictWriter(sFile, fieldnames=fieldNames)
@@ -225,11 +223,18 @@ def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=
                 sample_no = spot.idNo
             if analysisMode == 'Surrounds Normalize':
                 blankVal = spot.surroundsVal
-            spot.absorb = -math.log(spot.colorVal[channelIndex]/
-                                    blankVal)
-            calculatedConc = calculateConc(calib, spot.absorb)
-            if calculatedConc is not None:
-                calculatedConc = '{:.3f}'.format(calculatedConc)
+
+            if blankVal is not None:
+                spot.absorb = -math.log(spot.colorVal[channelIndexFromName(spot.channel)]/
+                                        blankVal)
+                calculatedConc = calculateConc(calib, spot.absorb)
+                if calculatedConc is not None:
+                    calculatedConc = '{:.3f}'.format(calculatedConc)
+                else:
+                    calculatedConc = ''
+            else:
+                calculatedConc = ''
+
             csvWriter.writerow(
                 {'type': type,
                  'sample_group': sample_group,
@@ -238,7 +243,7 @@ def writeRawData(calib, rawFile, spots, measuredChannel, analysisMode, blankVal=
                  'red': '{:.3f}'.format(spot.colorVal[0]),
                  'green': '{:.3f}'.format(spot.colorVal[1]),
                  'blue': '{:.3f}'.format(spot.colorVal[2]),
-                 'measured_channel': measuredChannel,
+                 'measured_channel': spot.channel,
                  'calculated_concentration': calculatedConc})
 
 
@@ -302,9 +307,10 @@ def calculateSampleConc(calib, spots, analysisMode, logger, sampleGrp,
     valCount = 0
     valSum = 0.0
     for spot in spots:
-        if spot.exclude is False:
+        if not spot.exclude:
             valCount += 1
             valSum += spot.absorb
+        assert calib.channel == spot.channel
     valMean = valSum / valCount
 
     log('mean of remaining brightness values: {}'.format(valMean))
@@ -443,3 +449,4 @@ def percentileTest(spots, logger=None):
         if spot.absorb < tenP or spot.absorb > nintyP:
             spot.exclude = True
             log('excluding {}'.format(spot.absorb))
+

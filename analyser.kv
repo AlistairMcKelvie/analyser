@@ -1,4 +1,6 @@
 #:import os os
+#:import util util
+#:import calc calc
 <MainMenuScreen>:
     orientation: 'vertical'
     Button:
@@ -7,26 +9,23 @@
     Button:
         text: 'Get New Calibration Set'
         text_size: self.size
-        font_size: '30sp'
+        font_size: '30dp'
         halign: 'center'
         valign: 'middle'
         on_release:
             app.targetReaderScreen = 'calib'
-            app.writeDir = app.create_new_data_set()
-            app.rawFile = app.writeDir + 'raw.csv'
-            app.calibFile = app.writeDir + 'calib.txt'
-            app.samplesFile = app.writeDir + 'samples.csv'
-            app.calcLog = app.writeDir + 'calc_log.txt'
+            app.writeDir = app.createDataSet()
+            app.logger = calc.CalcLogger('log', app.calcLog)
             app.goto_image_menu()
     Button:
         text: 'Load Old Calibration Set'
         text_size: self.size
-        font_size: '30sp'
+        font_size: '30dp'
         halign: 'center'
         valign: 'middle'
         on_release:
             app.targetReaderScreen = 'sample'
-            app.goto_get_old_calib()
+            app.newScreen(app.calibChooserScreen)
 
 
 <ImageMenuScreen>:
@@ -38,15 +37,18 @@
         halign: 'center'
         valign: 'middle'
         on_release:
-            if app.targetReaderScreen == 'calib':app.take_photo(app.targetReaderScreen, calibNo=app.calibNo)
-            else:app.take_photo(app.targetReaderScreen, sampleGrp=app.sampleScreen.ids['colorReader'].spots[0].sampleGrp)
+            if app.targetReaderScreen == 'calib':filepath=app.writeDir+'calib_{}.jpg'.format(app.calibNo)
+            else:filepath = app.writeDir + 'sample_{}.jpg'.format(app.sampleScreen.ids['colorReader'].spots[0].sampleGrp)
+            app.takenPhoto = filepath #is this ever used?
+            util.take_photo(filepath)
     Button:
         text: 'Get Stock Image'
         text_size: self.size
         font_size: '30sp'
         halign: 'center'
         valign: 'middle'
-        on_release: app.goto_get_stock_image()
+        on_release:
+            app.newScreen(app.stockImageScreen)
 
 
 <CalibChooserScreen>:
@@ -55,32 +57,26 @@
         size: root.size
         orientation: 'vertical'
         FileChooserListView:
-            id: calibChooser
+            id: fileChooser
             rootpath: app.user_data_dir
             dirselect: True
             size_hint_y: 0.9
-            path: '.'
+            path: app.dataSetDir
         BoxLayout:
             size_hint_y: 0.1
             Button:
                 id: selectButton
                 text: 'Load'
-                on_release:
-                    app.calib = app.readCalibFile(calibChooser.selection[0])
-                    app.writeDir = os.path.dirname(calibChooser.selection[0]) + '/'
-                    app.rawFile = app.writeDir + 'raw.csv'
-                    app.calibFile = app.writeDir + 'calib.txt'
-                    app.samplesFile = app.writeDir + 'samples.csv' 
-                    app.goto_image_menu()
+                on_release: app.selectDataSet(fileChooser.selection)
             Button:
                 text: 'Back'
-                on_release: app.goto_main_menu() 
+                on_release: app.newScreen(app.mainMenuScreen)
             Button:
                 text: 'Delete Set'
-                on_release: app.delete_data_set()
- 
- 
-<FileChooserScreen>:
+                on_release: root.delete_data_set(fileChooser.selection[0])
+
+
+<StockImageScreen>:
     BoxLayout:
         id: fileChooserScreen
         size: root.size
@@ -88,7 +84,8 @@
         FileChooserListView:
             id: fileChooser
             size_hint_y: 0.9
-            path: '.'
+            root: app.stockImageDir
+            path: app.stockImageDir
         Button:
             id: selectButton
             size_hint_y: 0.1
@@ -96,11 +93,11 @@
             on_release:
                 print 'filechooser selection', fileChooser.selection[0]
                 app.goto_color_reader_screen(fileChooser.selection[0])
- 
- 
+
+
 <MsgPopup>:
     size_hint: 0.7, 0.4
-    title: "Attention"    
+    title: "Attention"
     BoxLayout:
         orientation: 'vertical'
         padding: 10

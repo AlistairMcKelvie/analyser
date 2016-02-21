@@ -25,11 +25,8 @@ user = 'spot.analyser.test@gmail.com'
 #user = 'offshoreweather@gmail.com'
 
 clientId = '295062602032-6r0oveu3e3mnar9k42rh7en2pbtfpdsg.apps.googleusercontent.com'
-#clientId = '902727965852-h2ttc6d70bhmfkdq8j5evb4vdcdv1chb.apps.googleusercontent.com'
 clientSecret = 'y56y3ZvHvgbYERdVjA3M2_gm'
-#clientSecret = 'KOZjCM4qfsWU3sal1sqtaNn4'
 refreshToken = '1/UFaIEi9-wOzhbCBwROlCtXlVOS98-hxQJNOd9HKTGg4'
-#refreshToken = '1/DfnejMkhBlnERt8wphh247oBE8CM8YfwtNp6DJWGXmAMEudVrK5jSpoR30zcRFq6'
 
 
 def sendMail(toList, subject, message, attachmentDir):

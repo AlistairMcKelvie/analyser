@@ -42,7 +42,7 @@ requirements = openssl, pil, plyer, kivy
 #presplash.filename = %(source.dir)s/data/presplash.png
 
 # (str) Icon of the application
-icon.filename = %(source.dir)s/production_images/icon.png
+icon.filename = %(source.dir)s/product_images/icon.png
 
 # (str) Supported orientation (one of landscape, portrait or all)
 orientation = landscape

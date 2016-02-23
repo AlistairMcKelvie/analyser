@@ -25,7 +25,7 @@
         valign: 'middle'
         on_release:
             app.targetReaderScreen = 'sample'
-            app.newScreen(app.calibChooserScreen)
+            app.screenManager.add(app.calibChooserScreen)
 
 
 <ImageMenuScreen>:
@@ -48,7 +48,7 @@
         halign: 'center'
         valign: 'middle'
         on_release:
-            app.newScreen(app.stockImageScreen)
+            app.screenManager.add(app.stockImageScreen)
 
 
 <CalibChooserScreen>:
@@ -70,7 +70,7 @@
                 on_release: app.selectDataSet(fileChooser.selection)
             Button:
                 text: 'Back'
-                on_release: app.newScreen(app.mainMenuScreen)
+                on_release: app.screenManager.add(app.mainMenuScreen)
             Button:
                 text: 'Delete Set'
                 on_release: root.delete_data_set(fileChooser.selection[0])

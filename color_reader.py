@@ -416,11 +416,17 @@ class CalibrationScreen(Widget):
                                              app.analysisMode,
                                              app.qConfCSV,
                                              blankVal=app.blankVal)
+        # TODO: This should really be done at the end as it might get rolled back
         app.calib.writeCalibFile(app.calibFile)
         calc.writeRawData(app.calib, app.rawFile, colorReader.spots,
                           app.analysisMode, app.blankVal, app.firstRaw)
         app.firstRaw = False
         app.goto_calib_results()
+
+    def rollbackSpots(self):
+        app = App.get_running_app()
+        for __ in xrange(15):
+            app.calibSpots.pop()
 
 
 class SampleScreen(Widget):
@@ -468,3 +474,6 @@ class SampleScreen(Widget):
         app.firstSample = False
         self.sampleGrp += 1
         app.goto_sample_results(colorReader.spots, calcConc)
+
+    def rollbackSpots(self):
+        pass

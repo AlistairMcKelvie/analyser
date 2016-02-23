@@ -48,13 +48,39 @@ class StockImageScreen(Widget):
 
 
 class CalibChooserScreen(Widget):
-
     def delete_data_set(self, selection):
         try:
             shutil.rmtree(selection)
             self.ids['fileChooser']._update_files()
         except Exception as e:
             pass
+
+# Implement simple screen manager, as the kivy
+# one seems to be a bit broken
+class AnalyserScreenManager(object):
+    pastScreens = []
+    currentScreen = None
+    Screenback = namedtuple('Screenback', ['screen', 'callback'])
+
+    def add(self, screen, backbuttonCallback=None):
+        if self.currentScreen:
+            self.pastScreens.append(self.currentScreen)
+        self.currentScreen = self.Screenback(screen, backbuttonCallback)
+        self.__setScreen__(screen)
+
+
+    def back(self):
+        if self.pastScreens:
+            self.currentScreen = self.pastScreens.pop()
+            if self.currentScreen.callback is not None:
+                self.currentScreen.callback()
+            self.__setScreen__(self.currentScreen.screen)
+
+    @staticmethod
+    def __setScreen__(screen):
+        for widget in Window.children:
+            Window.remove_widget(widget)
+        Window.add_widget(screen)
 
 
 class AnalyserApp(App):
@@ -66,23 +92,25 @@ class AnalyserApp(App):
     calcLog = StringProperty('')
     qConfCSV = StringProperty('')
     analysisMode = StringProperty('')
+    _mainMenuScreen = None
+    _imageMenuScreen = None
+    _stockImageScreen = None
+    _calibChooserScreen = None
+    _calibResultsScreen = None
+    _calibrationScreen = None
+    _sampleScreen = None
+    _sampleResultsScreen = None
+
+    def __init__(self, **kwargs):
+        super(AnalyserApp, self).__init__(**kwargs)
+        Window.bind(on_keyboard=self.onKeyboard)
 
     def build(self):
         '''Runs when app starts'''
         self.dataSetDir = self.user_data_dir
 
-        self.mainMenuScreen = MainMenuScreen()
-        self.imageMenuScreen = ImageMenuScreen()
-        self.stockImageScreen = StockImageScreen()
-        self.calibChooserScreen = CalibChooserScreen()
-
         Builder.load_file('color_reader.kv')
-        self.calibrationScreen = CalibrationScreen()
-        self.sampleScreen = SampleScreen()
-
         Builder.load_file('display.kv')
-        self.calibResultsScreen = CalibResultsScreen()
-        self.sampleResultsScreen = SampleResultsScreen()
 
         self.firstSample = True
         self.firstRaw = True
@@ -91,7 +119,57 @@ class AnalyserApp(App):
         self.measuredChannel = self.config.get('technical', 'measuredChannel')
         self.analysisMode = self.config.get('technical', 'analysisMode')
 
-        return self.mainMenuScreen
+        self.screenManager = AnalyserScreenManager()
+        self.screenManager.add(self.mainMenuScreen)
+
+    #Lazy screen loading to improve startup times
+    @property
+    def mainMenuScreen(self):
+        if self._mainMenuScreen is None:
+            self._mainMenuScreen = MainMenuScreen()
+        return self._mainMenuScreen
+
+    @property
+    def imageMenuScreen(self):
+        if self._imageMenuScreen is None:
+            self._imageMenuScreen = ImageMenuScreen()
+        return self._imageMenuScreen
+
+    @property
+    def stockImageScreen(self):
+        if self._stockImageScreen is None:
+            self._stockImageScreen = StockImageScreen()
+        return self._stockImageScreen
+
+    @property
+    def calibChooserScreen(self):
+        if self._calibChooserScreen is None:
+            self._calibChooserScreen = CalibChooserScreen()
+        return self._calibChooserScreen
+
+    @property
+    def calibResultsScreen(self):
+        if self._calibResultsScreen is None:
+            self._calibResultsScreen = CalibResultsScreen()
+        return self._calibResultsScreen
+
+    @property
+    def calibrationScreen(self):
+        if self._calibrationScreen is None:
+            self._calibrationScreen = CalibrationScreen()
+        return self._calibrationScreen
+
+    @property
+    def sampleScreen(self):
+        if self._sampleScreen is None:
+            self._sampleScreen = SampleScreen()
+        return self._sampleScreen
+
+    @property
+    def sampleResultsScreen(self):
+        if self._sampleResultsScreen is None:
+            self._sampleResultsScreen = SampleResultsScreen()
+        return self._sampleResultsScreen
 
     @property
     def rawFile(self):
@@ -113,20 +191,28 @@ class AnalyserApp(App):
     def stockImageDir(self):
         return os.getcwd() + '/stock_images'
 
+    def onKeyboard(self, window, key, *args):
+        # If back/esc
+        if key == 27:
+            print('Back pressed')
+            self.screenManager.back()
+            return True
+        return False
+
     def goto_calib_results(self):
         self.calibResultsScreen.refresh(self.calibSpots, self.calib,
                                         self.blankVal, self.analysisMode,
                                         self.measuredChannel)
-        self.newScreen(self.calibResultsScreen)
+        self.screenManager.add(self.calibResultsScreen)
 
     def goto_sample_results(self, spots, conc):
         self.sampleResultsScreen.refresh(spots, conc, self.measuredChannel)
-        self.newScreen(self.sampleResultsScreen)
+        self.screenManager.add(self.sampleResultsScreen)
 
     def goto_image_menu(self):
         if self.targetReaderScreen == 'calib':
             self.calibNo += 1
-        self.newScreen(self.imageMenuScreen)
+        self.screenManager.add(self.imageMenuScreen)
 
     def goto_color_reader_screen(self, imageFile, *args):
         assert (self.targetReaderScreen == 'calib' or
@@ -139,7 +225,7 @@ class AnalyserApp(App):
             readerScreen = self.sampleScreen
 
         readerScreen.updateImage(imageFile)
-        self.newScreen(readerScreen)
+        self.screenManager.add(readerScreen, readerScreen.rollbackSpots)
 
     def writeSpotsToConfig(self):
         print 'writing to config'
@@ -188,11 +274,6 @@ class AnalyserApp(App):
                  ('Spot analyser files from {}'
                   ).format(self.writeDir.split('/')[-2].split('\\')[-1]),
                  self.writeDir)
-
-    def newScreen(self, screen):
-        for widget in Window.children:
-            Window.remove_widget(widget)
-        Window.add_widget(screen)
 
     def build_settings(self, settings):
         settings.add_json_panel('Settings', self.config, 'settings.json')

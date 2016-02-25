@@ -25,7 +25,7 @@
         valign: 'middle'
         on_release:
             app.targetReaderScreen = 'sample'
-            app.screenManager.add(app.calibChooserScreen)
+            app.screenManager.add(app.screens.calibChooser)
 
 
 <ImageMenuScreen>:
@@ -48,7 +48,7 @@
         halign: 'center'
         valign: 'middle'
         on_release:
-            app.screenManager.add(app.stockImageScreen)
+            app.screenManager.add(app.screens.stockImage)
 
 
 <CalibChooserScreen>:
@@ -67,13 +67,10 @@
             Button:
                 id: selectButton
                 text: 'Load'
-                on_release: app.selectDataSet(fileChooser.selection)
-            Button:
-                text: 'Back'
-                on_release: app.screenManager.add(app.mainMenuScreen)
+                on_release: root.selectDataSet()
             Button:
                 text: 'Delete Set'
-                on_release: root.delete_data_set(fileChooser.selection[0])
+                on_release: root.deleteDataSet()
 
 
 <StockImageScreen>:
@@ -91,8 +88,7 @@
             size_hint_y: 0.1
             text: 'Load'
             on_release:
-                print 'filechooser selection', fileChooser.selection[0]
-                app.goto_color_reader_screen(fileChooser.selection[0])
+                root.selectImage()
 
 
 <MsgPopup>:

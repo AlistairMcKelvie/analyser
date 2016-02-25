@@ -44,16 +44,32 @@ class GraphScreen(Widget):
 
 
 class StockImageScreen(Widget):
-    pass
+    def selectImage(self):
+        app = App.get_running_app()
+        fileChooser = self.ids['fileChooser']
+        if fileChooser.selection:
+            selection = fileChooser.selection[0]
+            if selection.split('.')[-1] in ['png', 'jpg', 'jpeg', 'bmp']:
+                self.app.goto_color_reader_screen(selection)
 
 
 class CalibChooserScreen(Widget):
-    def delete_data_set(self, selection):
-        try:
-            shutil.rmtree(selection)
-            self.ids['fileChooser']._update_files()
-        except Exception as e:
-            pass
+    def deleteDataSet(self):
+        fileChooser = self.ids['fileChooser']
+        if fileChooser.selection:
+            selection = fileChooser.selection[0]
+            try:
+                shutil.rmtree(selection)
+                self.ids['fileChooser']._update_files()
+            except Exception as e:
+                pass
+
+    def selectDataSet(self):
+        fileChooser = self.ids['fileChooser']
+        if fileChooser.selection:
+            selection = fileChooser.selection[0]
+            app = App.get_running_app()
+            app.selectDataSet(selection)
 
 # Implement simple screen manager, as the kivy
 # one seems to be a bit broken
@@ -82,6 +98,68 @@ class AnalyserScreenManager(object):
             Window.remove_widget(widget)
         Window.add_widget(screen)
 
+class Screens(object):
+    _mainMenu = None
+    _imageMenu = None
+    _stockImage = None
+    _calibChooser = None
+    _calibResults = None
+    _calibration = None
+    _sample = None
+    _sampleResults = None
+
+    def __init__(self, app):
+        self.app = app
+
+    #Lazy screen loading to improve startup times
+    @property
+    def mainMenu(self):
+        if self._mainMenu is None:
+            self._mainMenu = MainMenuScreen()
+        return self._mainMenu
+
+    @property
+    def imageMenu(self):
+        if self._imageMenu is None:
+            self._imageMenu = ImageMenuScreen()
+        return self._imageMenu
+
+    @property
+    def stockImage(self):
+        if self._stockImage is None:
+            self._stockImage = StockImageScreen()
+        return self._stockImage
+
+    @property
+    def calibChooser(self):
+        if self._calibChooser is None:
+            self._calibChooser = CalibChooserScreen()
+        return self._calibChooser
+
+    @property
+    def calibResults(self):
+        if self._calibResults is None:
+            self._calibResults = CalibResultsScreen()
+        return self._calibResults
+
+    @property
+    def calibration(self):
+        if self._calibration is None:
+            self._calibration = CalibrationScreen()
+        return self._calibration
+
+    @property
+    def sample(self):
+        if self._sample is None:
+            self._sample = SampleScreen()
+        return self._sample
+
+    @property
+    def sampleResults(self):
+        if self._sampleResults is None:
+            self._sampleResults = SampleResultsScreen()
+        return self._sampleResults
+
 
 class AnalyserApp(App):
     measuredChannel = OptionProperty('red', options=['red', 'green', 'blue'])
@@ -92,18 +170,11 @@ class AnalyserApp(App):
     calcLog = StringProperty('')
     qConfCSV = StringProperty('')
     analysisMode = StringProperty('')
-    _mainMenuScreen = None
-    _imageMenuScreen = None
-    _stockImageScreen = None
-    _calibChooserScreen = None
-    _calibResultsScreen = None
-    _calibrationScreen = None
-    _sampleScreen = None
-    _sampleResultsScreen = None
 
     def __init__(self, **kwargs):
         super(AnalyserApp, self).__init__(**kwargs)
         Window.bind(on_keyboard=self.onKeyboard)
+        self.screens = Screens(self)
 
     def build(self):
         '''Runs when app starts'''
@@ -120,56 +191,7 @@ class AnalyserApp(App):
         self.analysisMode = self.config.get('technical', 'analysisMode')
 
         self.screenManager = AnalyserScreenManager()
-        self.screenManager.add(self.mainMenuScreen)
-
-    #Lazy screen loading to improve startup times
-    @property
-    def mainMenuScreen(self):
-        if self._mainMenuScreen is None:
-            self._mainMenuScreen = MainMenuScreen()
-        return self._mainMenuScreen
-
-    @property
-    def imageMenuScreen(self):
-        if self._imageMenuScreen is None:
-            self._imageMenuScreen = ImageMenuScreen()
-        return self._imageMenuScreen
-
-    @property
-    def stockImageScreen(self):
-        if self._stockImageScreen is None:
-            self._stockImageScreen = StockImageScreen()
-        return self._stockImageScreen
-
-    @property
-    def calibChooserScreen(self):
-        if self._calibChooserScreen is None:
-            self._calibChooserScreen = CalibChooserScreen()
-        return self._calibChooserScreen
-
-    @property
-    def calibResultsScreen(self):
-        if self._calibResultsScreen is None:
-            self._calibResultsScreen = CalibResultsScreen()
-        return self._calibResultsScreen
-
-    @property
-    def calibrationScreen(self):
-        if self._calibrationScreen is None:
-            self._calibrationScreen = CalibrationScreen()
-        return self._calibrationScreen
-
-    @property
-    def sampleScreen(self):
-        if self._sampleScreen is None:
-            self._sampleScreen = SampleScreen()
-        return self._sampleScreen
-
-    @property
-    def sampleResultsScreen(self):
-        if self._sampleResultsScreen is None:
-            self._sampleResultsScreen = SampleResultsScreen()
-        return self._sampleResultsScreen
+        self.screenManager.add(self.screens.mainMenu)
 
     @property
     def rawFile(self):
@@ -200,19 +222,19 @@ class AnalyserApp(App):
         return False
 
     def goto_calib_results(self):
-        self.calibResultsScreen.refresh(self.calibSpots, self.calib,
-                                        self.blankVal, self.analysisMode,
-                                        self.measuredChannel)
-        self.screenManager.add(self.calibResultsScreen)
+        self.screens.calibResults.refresh(self.calibSpots, self.calib,
+                                          self.blankVal, self.analysisMode,
+                                          self.measuredChannel)
+        self.screenManager.add(self.screens.calibResults)
 
     def goto_sample_results(self, spots, conc):
-        self.sampleResultsScreen.refresh(spots, conc, self.measuredChannel)
-        self.screenManager.add(self.sampleResultsScreen)
+        self.screens.sampleResults.refresh(spots, conc, self.measuredChannel)
+        self.screenManager.add(self.screens.sampleResults)
 
     def goto_image_menu(self):
         if self.targetReaderScreen == 'calib':
             self.calibNo += 1
-        self.screenManager.add(self.imageMenuScreen)
+        self.screenManager.add(self.screens.imageMenu)
 
     def goto_color_reader_screen(self, imageFile, *args):
         assert (self.targetReaderScreen == 'calib' or
@@ -220,9 +242,9 @@ class AnalyserApp(App):
             'targetReaderScreen is set to {}, this is not valid option.'\
             .format(self.targetReaderScreen)
         if self.targetReaderScreen == 'calib':
-            readerScreen = self.calibrationScreen
+            readerScreen = self.screens.calibration
         elif self.targetReaderScreen == 'sample':
-            readerScreen = self.sampleScreen
+            readerScreen = self.screens.sample
 
         readerScreen.updateImage(imageFile)
         self.screenManager.add(readerScreen, readerScreen.rollbackSpots)
@@ -230,9 +252,9 @@ class AnalyserApp(App):
     def writeSpotsToConfig(self):
         print 'writing to config'
         if self.targetReaderScreen == 'sample':
-            spots = self.sampleScreen.ids['colorReader'].spots
+            spots = self.screens.sample.ids['colorReader'].spots
         else:
-            spots = self.calibrationScreen.ids['colorReader'].spots
+            spots = self.screens.calibration.ids['colorReader'].spots
         for spot in spots:
             if spot.type == 'std':
                 self.config.set('SpotTypes',
@@ -284,9 +306,9 @@ class AnalyserApp(App):
             if key == 'measuredChannel':
                 self.measuredChannel = value
             elif key == 'spotSize':
-                self.calibrationScreen.ids['colorReader'].currentSpotSize =\
+                self.screens.calibration.ids['colorReader'].currentSpotSize =\
                     int(self.config.get('technical', 'spotSize'))
-                self.sampleScreen.ids['colorReader'].currentSpotSize =\
+                self.screens.sample.ids['colorReader'].currentSpotSize =\
                     int(self.config.get('technical', 'spotSize'))
             elif key == 'analysisMode':
                 self.analysisMode = self.config.get('technical',
@@ -303,10 +325,8 @@ class AnalyserApp(App):
             os.mkdir(setDataDir)
         return setDataDir
 
-    def selectDataSet(self, pathList):
-        if len(pathList) == 0:
-            return
-        self.writeDir = pathList[0] + '/'
+    def selectDataSet(self, dataDir):
+        self.writeDir = dataDir
         self.calib = util.CalibrationCurve(file=self.calibFile)
         self.logger = calc.CalcLogger('log', self.calcLog)
         self.goto_image_menu()

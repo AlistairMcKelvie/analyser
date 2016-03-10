@@ -50,7 +50,7 @@ class StockImageScreen(Widget):
         if fileChooser.selection:
             selection = fileChooser.selection[0]
             if selection.split('.')[-1] in ['png', 'jpg', 'jpeg', 'bmp']:
-                self.app.goto_color_reader_screen(selection)
+                app.goto_color_reader_screen(selection)
 
 
 class CalibChooserScreen(Widget):
@@ -248,6 +248,10 @@ class AnalyserApp(App):
 
         readerScreen.updateImage(imageFile)
         self.screenManager.add(readerScreen, readerScreen.rollbackSpots)
+
+    def goto_main_menu(self):
+        self.screenManager.add(self.screens.mainMenu)
+
 
     def writeSpotsToConfig(self):
         print 'writing to config'

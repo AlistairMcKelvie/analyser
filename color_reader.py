@@ -78,10 +78,14 @@ class ColorReaderSpot(object):
             if app.analysisMode == 'Blank Normalize':
                 pass
             elif app.analysisMode == 'Surrounds Normalize':
-                self.absorb = -math.log10(self.colorVal[channelIndex] /
-                                          surroundsVal)
-                lStr = '\nBlank: {4:03.0f}  Absorb: {5:05.3f}'
-                text = text + lStr.format(self.absorb, self.surroundsVal)
+                try:
+                    self.absorb = -math.log10(self.colorVal[channelIndex] /
+                                              self.surroundsVal)
+                except ValueError:
+                    # log of 0
+                    self.absorb = 0
+                lStr = 'Blank: {0:03.0f}  Absorb: {1:05.3f}'
+                text = text + lStr.format(self.surroundsVal, self.absorb)
         else:
             text = '[b]{0}[/b]'.format(typeText)
         return text
@@ -91,13 +95,13 @@ class ColorReaderSpot(object):
         self.instGrp.add(self.spotColor)
         self.instGrp.add(Rectangle(size=(size, size), pos=(X, Y)))
 
-    def addSurrondsSpots(self, size=2.5):
+    def addSurroundsSpots(self, size=2.5):
         self.instGrp.children = self.instGrp.children[:3]
         size = metrics.dp(size)
         mainSize = self.instGrp.children[2].size[0]
         x = self.instGrp.children[2].pos[0] + mainSize / 2 - size / 2
         y = self.instGrp.children[2].pos[1] + mainSize / 2 - size / 2
-        self.instGrp.add(self.blankSpotColor)
+        self.instGrp.add(self.surroundsSpotColor)
         self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
         self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
         self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
@@ -466,11 +470,11 @@ class SampleScreen(Widget):
         calcConc = calc.calculateSampleConc(app.calib, colorReader.spots,
                                             app.analysisMode, app.logger,
                                             self.sampleGrp, app.qConfCSV,
-                                            blankVal=app.blankVal)
+                                            blankVal=app.calib.blankVal)
         calc.writeSamplesFile(app.samplesFile, calcConc,
                               self.sampleGrp, app.firstSample)
         calc.writeRawData(app.calib, app.rawFile, colorReader.spots,
-                          app.analysisMode, app.blankVal)
+                          app.analysisMode, app.calib.blankVal)
         app.firstSample = False
         self.sampleGrp += 1
         app.goto_sample_results(colorReader.spots, calcConc)

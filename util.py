@@ -46,26 +46,31 @@ class MsgPopup(Popup):
 
 
 class CalibrationCurve(object):
-    def __init__(self, M=None, C=None, R2=None, channel=None,
-                 pointsCount=None, file=None, status='OK'):
+    def __init__(self, mode=None, M=None, C=None, R2=None, channel=None,
+                 pointsCount=None, file=None, status='OK',
+                 blankVal=None):
         assert status in ['OK', 'NoBlank', 'NotEnoughConcentrations']
         if file is not None:
+            assert mode is None
             assert M is None
             assert C is None
             assert R2 is None
             assert pointsCount is None
             self.readCalibFile(file)
         elif status == 'OK':
+            assert mode in ['Blank Normalize', 'Surrounds Normalize']
             assert type(M) is FloatType
             assert type(C) is FloatType
             assert type(R2) is FloatType
             assert channel in ['red', 'green', 'blue']
+            self.mode = mode
             self.M = M
             self.C = C
             self.R2 = R2
             self.channel = channel
             self.pointsCount = pointsCount
             self.status = status
+            self.blankVal = blankVal
         else:
             self.status = status
 
@@ -73,20 +78,28 @@ class CalibrationCurve(object):
         with open(calibFile, 'r') as f:
             self.status = f.next().split()[1]
             if self.status == 'OK':
+                self.mode = f.next().split(':')[1].strip()
                 self.M = float(f.next().split()[1])
                 self.C = float(f.next().split()[1])
                 self.R2 = float(f.next().split()[1])
                 self.channel = f.next().split()[1]
                 self.pointsCount = int(f.next().split()[1])
+                if self.mode == 'Blank Normalize':
+                    self.blankVal = float(f.next().split(':')[1])
+                else:
+                    self.blankVal = None
 
     def writeCalibFile(self, calibFile):
         with open(calibFile, 'wb') as f:
             if self.status == 'OK':
                 f.write('Status: {}\n'.format(self.status))
+                f.write('Mode: {}\n'.format(self.mode))
                 f.write('M: {}\n'.format(self.M))
                 f.write('C: {}\n'.format(self.C))
                 f.write('R2: {}\n'.format(self.R2))
                 f.write('Channel: {}\n'.format(self.channel))
                 f.write('PointsCount: {}\n'.format(self.pointsCount))
+                if self.mode == 'Blank Normalize':
+                    f.write('Blank: {}\n'.format(self.blankVal))
             else:
                 f.write(self.status + '\n')

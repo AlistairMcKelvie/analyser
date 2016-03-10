@@ -86,8 +86,12 @@ def calculateCalibCurve(spots, logger, measuredChannel, analysisMode,
         for spot in spotConcDict[conc]:
             if analysisMode == 'Surrounds Normalize':
                 blankVal = spot.surroundsVal
-            spot.absorb = -math.log(spot.colorVal[channelIndex]/
-                                    blankVal)
+            try:
+                spot.absorb = -math.log(spot.colorVal[channelIndex]/
+                                        blankVal)
+            except ValueError:
+                # log of 0
+                spot.absorb = 0
             log('{0: <2}    {1:9.3f}   {2:9.3f}    {3:9.3f}'.format(spot.idNo,
                                               spot.colorVal[channelIndex],
                                               blankVal,
@@ -157,8 +161,8 @@ def calculateCalibCurve(spots, logger, measuredChannel, analysisMode,
         R2 = 1 - SSres / SStot
         log(u'R\u00b2 = {:.5f}'.format(R2))
         Calib = namedtuple('CalibCurve', ['M', 'C', 'R2', 'channel'])
-        return CalibrationCurve(M=M, C=C, R2=R2, channel=measuredChannel,
-                                pointsCount=len(spots))
+        return CalibrationCurve(mode=analysisMode, M=M, C=C, R2=R2, channel=measuredChannel,
+                                pointsCount=len(spots), blankVal=blankVal)
 
 
 def calculateBlankVal(spots, measuredChannel, logger):
@@ -225,8 +229,12 @@ def writeRawData(calib, rawFile, spots, analysisMode, blankVal=None, firstWrite=
                 blankVal = spot.surroundsVal
 
             if blankVal is not None:
-                spot.absorb = -math.log(spot.colorVal[channelIndexFromName(spot.channel)]/
-                                        blankVal)
+                try:
+                    spot.absorb = -math.log(spot.colorVal[channelIndexFromName(spot.channel)]/
+                                            blankVal)
+                except ValueError:
+                    # log of 0
+                    spot.absorb = 0
                 calculatedConc = calculateConc(calib, spot.absorb)
                 if calculatedConc is not None:
                     calculatedConc = '{:.3f}'.format(calculatedConc)
@@ -291,8 +299,12 @@ def calculateSampleConc(calib, spots, analysisMode, logger, sampleGrp,
         spot.exclude = False
         if analysisMode == 'Surrounds Normalize':
             blankVal = spot.surroundsVal
-        spot.absorb = -math.log(spot.colorVal[channelIndex]/
-                                blankVal)
+        try:
+            spot.absorb = -math.log(spot.colorVal[channelIndex]/
+                                    blankVal)
+        except ValueError:
+            #log of 0
+            spot.absorb = 0
         log(('{0: <2}  {1:9.3f}    {2:9.3f}  {3:9.3f}'
              ).format(spot.idNo,
                      spot.colorVal[channelIndex],

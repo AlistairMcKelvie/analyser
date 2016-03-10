@@ -191,7 +191,7 @@ class AnalyserApp(App):
         self.analysisMode = self.config.get('technical', 'analysisMode')
 
         self.screenManager = AnalyserScreenManager()
-        self.screenManager.add(self.screens.mainMenu)
+        self.goto_main_menu()
 
     @property
     def rawFile(self):
@@ -250,7 +250,13 @@ class AnalyserApp(App):
         self.screenManager.add(readerScreen, readerScreen.rollbackSpots)
 
     def goto_main_menu(self):
-        self.screenManager.add(self.screens.mainMenu)
+        self.screenManager.add(self.screens.mainMenu, self.cleanUpDirs)
+
+    def cleanUpDirs(self):
+        for dr in os.listdir(self.dataSetDir):
+            if not os.path.isfile(self.dataSetDir + '/' + dr + '/calib.txt'):
+                shutil.rmtree(self.dataSetDir + '/' + dr)
+
 
 
     def writeSpotsToConfig(self):
@@ -340,7 +346,6 @@ class AnalyserApp(App):
 
     def on_resume(self):
         pass
-
 
 if __name__ == '__main__':
     AnalyserApp().run()

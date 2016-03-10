@@ -25,7 +25,9 @@
         valign: 'middle'
         on_release:
             app.targetReaderScreen = 'sample'
+            app.cleanUpDirs()
             app.screenManager.add(app.screens.calibChooser)
+            app.screens.calibChooser.refresh()
 
 
 <ImageMenuScreen>:
@@ -56,8 +58,8 @@
         id: fileChooserScreen
         size: root.size
         orientation: 'vertical'
-        FileChooserListView:
-            id: fileChooser
+        ListView:
+            id: listView
             rootpath: app.user_data_dir
             dirselect: True
             size_hint_y: 0.9

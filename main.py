@@ -52,24 +52,43 @@ class StockImageScreen(Widget):
             if selection.split('.')[-1] in ['png', 'jpg', 'jpeg', 'bmp']:
                 app.goto_color_reader_screen(selection)
 
-
+from kivy.uix.listview import ListItemButton
+from kivy.adapters.listadapter import ListAdapter
 class CalibChooserScreen(Widget):
+    selectedCalib = StringProperty('')
+    def refresh(self):
+        self.listView = self.ids['listView']
+        app = App.get_running_app()
+
+        drs = os.listdir(app.dataSetDir)
+        data = []
+        for dr in drs:
+            if os.path.isfile(app.dataSetDir + '/' + dr + '/calib.txt'):
+                data.append({'text': dr, 'is_selected': False})
+
+        args_converter = lambda row_index, rec: {'text': rec['text'],
+                                       'size_hint_y': None,
+                                       'height': 25}
+
+        self.listView.adapter = ListAdapter(data=data,
+                           args_converter=args_converter,
+                           cls=ListItemButton,
+                           selection_mode='single',
+                           allow_empty_selection=True)
+
+
     def deleteDataSet(self):
-        fileChooser = self.ids['fileChooser']
-        if fileChooser.selection:
-            selection = fileChooser.selection[0]
-            try:
-                shutil.rmtree(selection)
-                self.ids['fileChooser']._update_files()
-            except Exception as e:
-                pass
+        selection = self.listView.adapter.selection
+        if selection:
+            app = App.get_running_app()
+            shutil.rmtree(app.dataSetDir + '/' + selection[0].text)
+            self.refresh()
 
     def selectDataSet(self):
-        fileChooser = self.ids['fileChooser']
-        if fileChooser.selection:
-            selection = fileChooser.selection[0]
+        selection = self.listView.adapter.selection
+        if selection:
             app = App.get_running_app()
-            app.selectDataSet(selection)
+            app.selectDataSet(app.dataSetDir + '/' + selection[0].text)
 
 # Implement simple screen manager, as the kivy
 # one seems to be a bit broken
@@ -195,19 +214,19 @@ class AnalyserApp(App):
 
     @property
     def rawFile(self):
-        return self.writeDir + 'raw.csv'
+        return self.writeDir + '/raw.csv'
 
     @property
     def calibFile(self):
-        return self.writeDir + 'calib.txt'
+        return self.writeDir + '/calib.txt'
 
     @property
     def samplesFile(self):
-        return self.writeDir + 'samples.csv'
+        return self.writeDir + '/samples.csv'
 
     @property
     def calcLog(self):
-        return self.writeDir + 'calc_log.txt'
+        return self.writeDir + '/calc_log.txt'
 
     @property
     def stockImageDir(self):
@@ -250,7 +269,7 @@ class AnalyserApp(App):
         self.screenManager.add(readerScreen, readerScreen.rollbackSpots)
 
     def goto_main_menu(self):
-        self.screenManager.add(self.screens.mainMenu, self.cleanUpDirs)
+        self.screenManager.add(self.screens.mainMenu)
 
     def cleanUpDirs(self):
         for dr in os.listdir(self.dataSetDir):

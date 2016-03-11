@@ -34,7 +34,7 @@ def take_photo(filepath):
 def camera_callback(imageFile, **kwargs):
     app = App.get_running_app()
     print 'got camera callback'
-    PILImage.open(imageFile).resize((800, 600)).save(imageFile)
+    PILImage.open(imageFile).resize((600, 450)).save(imageFile)
     Clock.schedule_once(partial(app.goto_color_reader_screen, imageFile, 0.3))
     return False
 

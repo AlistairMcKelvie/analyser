@@ -1,0 +1,20 @@
+<CalibChooserScreen>:
+    BoxLayout:
+        id: fileChooserScreen
+        size: root.size
+        orientation: 'vertical'
+        ListView:
+            id: listView
+            rootpath: app.user_data_dir
+            dirselect: True
+            size_hint_y: 0.9
+            path: app.dataSetDir
+        BoxLayout:
+            size_hint_y: 0.1
+            Button:
+                id: selectButton
+                text: 'Load'
+                on_release: root.selectDataSet()
+            Button:
+                text: 'Delete Set'
+                on_release: root.deleteDataSet()

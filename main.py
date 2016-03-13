@@ -19,14 +19,15 @@ import kivy.metrics as metrics
 import os
 import csv
 from collections import namedtuple
+from datetime import datetime
+import shutil
 
 from color_reader import ColorReader,\
                          CalibrationScreen,\
                          SampleScreen
 from display import CalibResultsScreen, SampleResultsScreen
+from calib_chooser import CalibChooserScreen
 from sendGmail import sendMail
-import shutil
-from datetime import datetime
 
 import calc
 import util
@@ -52,43 +53,6 @@ class StockImageScreen(Widget):
             if selection.split('.')[-1] in ['png', 'jpg', 'jpeg', 'bmp']:
                 app.goto_color_reader_screen(selection)
 
-from kivy.uix.listview import ListItemButton
-from kivy.adapters.listadapter import ListAdapter
-class CalibChooserScreen(Widget):
-    selectedCalib = StringProperty('')
-    def refresh(self):
-        self.listView = self.ids['listView']
-        app = App.get_running_app()
-
-        drs = os.listdir(app.dataSetDir)
-        data = []
-        for dr in drs:
-            if os.path.isfile(app.dataSetDir + '/' + dr + '/calib.txt'):
-                data.append({'text': dr, 'is_selected': False})
-
-        args_converter = lambda row_index, rec: {'text': rec['text'],
-                                       'size_hint_y': None,
-                                       'height': 25}
-
-        self.listView.adapter = ListAdapter(data=data,
-                           args_converter=args_converter,
-                           cls=ListItemButton,
-                           selection_mode='single',
-                           allow_empty_selection=True)
-
-
-    def deleteDataSet(self):
-        selection = self.listView.adapter.selection
-        if selection:
-            app = App.get_running_app()
-            shutil.rmtree(app.dataSetDir + '/' + selection[0].text)
-            self.refresh()
-
-    def selectDataSet(self):
-        selection = self.listView.adapter.selection
-        if selection:
-            app = App.get_running_app()
-            app.selectDataSet(app.dataSetDir + '/' + selection[0].text)
 
 # Implement simple screen manager, as the kivy
 # one seems to be a bit broken
@@ -201,6 +165,7 @@ class AnalyserApp(App):
 
         Builder.load_file('color_reader.kv')
         Builder.load_file('display.kv')
+        Builder.load_file('calib_chooser.kv')
 
         self.firstSample = True
         self.firstRaw = True

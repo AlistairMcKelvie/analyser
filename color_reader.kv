@@ -1,3 +1,4 @@
+#:import window kivy.core.window.Window
 <CalibrationScreen>:
     id: readerScreen
     canvas:
@@ -330,7 +331,7 @@
 <ColorReaderToggleButton@ToggleButton>:
     group: 'select'
     allow_no_currentSpot: False
-    font_size: '8dp'
+    font_size: dp(window.height * 0.015)
     halign: 'center'
     valign: 'middle'
     markup: True

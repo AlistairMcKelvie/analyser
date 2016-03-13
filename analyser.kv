@@ -3,13 +3,17 @@
 #:import calc calc
 <MainMenuScreen>:
     orientation: 'vertical'
+    background_color: 1, 1, 1
     Button:
+        font_size: '25dp'
         text: 'Settings'
         on_release: app.open_settings()
+        background_normal: ''
+        color: 0, 0, 0, 1
     Button:
         text: 'Get New Calibration Set'
         text_size: self.size
-        font_size: '30dp'
+        font_size: '25dp'
         halign: 'center'
         valign: 'middle'
         on_release:
@@ -17,10 +21,12 @@
             app.writeDir = app.createDataSet()
             app.logger = calc.CalcLogger('log', app.calcLog)
             app.goto_image_menu()
+        background_normal: ''
+        color: 0, 0, 0, 1
     Button:
         text: 'Load Old Calibration Set'
         text_size: self.size
-        font_size: '30dp'
+        font_size: '25dp'
         halign: 'center'
         valign: 'middle'
         on_release:
@@ -28,10 +34,13 @@
             app.cleanUpDirs()
             app.screenManager.add(app.screens.calibChooser)
             app.screens.calibChooser.refresh()
+        background_normal: ''
+        color: 0, 0, 0, 1
 
 
 <ImageMenuScreen>:
     orientation: 'vertical'
+    background_color: 1, 1, 1
     Button:
         text: 'Take Photo'
         text_size: self.size
@@ -43,6 +52,8 @@
             else:filepath = app.writeDir + 'sample_{}.jpg'.format(app.sampleScreen.ids['colorReader'].spots[0].sampleGrp)
             app.takenPhoto = filepath #is this ever used?
             util.take_photo(filepath)
+        background_normal: ''
+        color: 0, 0, 0, 1
     Button:
         text: 'Get Stock Image'
         text_size: self.size
@@ -51,9 +62,12 @@
         valign: 'middle'
         on_release:
             app.screenManager.add(app.screens.stockImage)
+        background_normal: ''
+        color: 0, 0, 0, 1
 
 
 <StockImageScreen>:
+    background_color: 1, 1, 1
     BoxLayout:
         id: fileChooserScreen
         size: root.size
@@ -69,6 +83,8 @@
             text: 'Load'
             on_release:
                 root.selectImage()
+            background_normal: ''
+            color: 0, 0, 0, 1
 
 
 <MsgPopup>:

@@ -207,10 +207,7 @@ class ColorReader(Widget):
         self.y = y
 
     def updateSpotSize(self, spotSize):
-        try:
-            self.currentSpotSize = int(spotSize)
-        except ValueError:
-            pass
+        self.currentSpotSize = int(spotSize)
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):

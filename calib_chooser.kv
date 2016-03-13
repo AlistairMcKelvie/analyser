@@ -1,4 +1,5 @@
 <CalibChooserScreen>:
+    background_color: 1, 1, 1
     BoxLayout:
         id: fileChooserScreen
         size: root.size
@@ -9,12 +10,17 @@
             dirselect: True
             size_hint_y: 0.9
             path: app.dataSetDir
+            background_color: 1, 1, 1
         BoxLayout:
             size_hint_y: 0.1
             Button:
                 id: selectButton
                 text: 'Load'
                 on_release: root.selectDataSet()
+                background_normal: ''
+                color: 0, 0, 0, 1
             Button:
                 text: 'Delete Set'
                 on_release: root.deleteDataSet()
+                background_normal: ''
+                color: 0, 0, 0, 1

@@ -5,6 +5,7 @@
         Rectangle:
     ColorReader:
         id: colorReader
+        currentSpotConc: float(sampleValText.text)
         spotCount: app.spotCount
         currentSpotType: 'std'
     BoxLayout:
@@ -29,19 +30,20 @@
             on_release:
                 root.acceptCalib()
         TextInput:
+            id: sampleValText
+            text: '0'
+            font_size: self.height * 0.8
+            input_filter: 'float'
+        Label:
+            text: 'Std Conc'
+            size_hint_y: 0.3
+        TextInput:
             text: str(colorReader.currentSpotSize)
             font_size: self.height * 0.8
             on_text: colorReader.updateSpotSize(self.text)
+            input_filter: 'int'
         Label:
             text: 'Spot size'
-            size_hint_y: 0.3
-        TextInput:
-            id: sampleValText
-            text: str(colorReader.currentSpotConc)
-            font_size: self.height * 0.8
-            on_text: colorReader.currentSpotConc = float(self.text)
-        Label:
-            text: 'Std Conc'
             size_hint_y: 0.3
         Button:
             text: 'Update all\nconcentrations'
@@ -49,7 +51,7 @@
             font_size: '10sp'
             halign: 'center'
             valign: 'middle'
-            on_release: for spot in colorReader.spots:colorReader.updateSpotConc(spot, colorReader.currentSpotConc)
+            on_release: for spot in colorReader.spots:colorReader.updateSpotConc(spot, float(sampleValText.text))
         RelativeLayout:
             cols: 3
             row: 3
@@ -192,6 +194,7 @@
             on_text:
                 root.sampleGrp = int(self.text)
                 root.updateSpotGrps()
+            input_filter: 'int'
         Label:
             text: 'Sample Number'
             size_hint_y: 0.3
@@ -199,6 +202,7 @@
             text: str(colorReader.currentSpotSize)
             font_size: self.height * 0.8
             on_text: colorReader.updateSpotSize(self.text)
+            input_filter: 'int'
         Label:
             text: 'Spot size'
             size_hint_y: 0.3
@@ -331,7 +335,7 @@
 <ColorReaderToggleButton@ToggleButton>:
     group: 'select'
     allow_no_currentSpot: False
-    font_size: dp(window.height * 0.015)
+    font_size: window.height * 0.015
     halign: 'center'
     valign: 'middle'
     markup: True

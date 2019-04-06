@@ -55,9 +55,19 @@ class FileChooserScreen(Widget):
 class CalibChooserScreen(Widget):
     pass
 
+def select_calib(app, calibChooser):
+    if os.path.exists(calibChooser.selection[0]) and os.path.isfile(calibChooser.selection[0]):
+        app.calib = app.readCalibFile(calibChooser.selection[0])
+        app.writeDir = os.path.dirname(calibChooser.selection[0]) + '/'
+        app.rawFile = app.writeDir + 'raw.csv'
+        app.calibFile = app.writeDir + 'calib.txt'
+        app.samplesFile = app.writeDir + 'samples.csv' 
+        app.calcLog = app.writeDir + 'calc_log.txt' 
+        app.goto_image_menu()
+
 
 class AnalyserApp(App):
-    measuredChannel = OptionProperty('red', options=['red', 'green', 'blue'])
+    measuredChannel = OptionProperty('Red', options=['Red', 'Green', 'Blue'])
     calibSpots = ListProperty([])
     targetReaderScreen = StringProperty('')
     stdsFile = StringProperty('')
@@ -397,15 +407,17 @@ class AnalyserApp(App):
 
 
     def create_new_data_set(self):
-        setDataDir = '{0}/{1:%Y%m%d_%H:%M}/'.format(self.user_data_dir,
-                                                    datetime.now())
+        setDataDir = os.path.join(self.user_data_dir,
+                                  '{0:%Y%m%d_%H%M}'.format(datetime.now()),
+                                  '')
         # TODO handle data error if dir already exists
         try:
-            os.mkdir(setDataDir)
+            os.makedirs(setDataDir)
         except OSError:
-            setDataDir = '{0}/{1:%Y%m%d_%H:%M:%S}/'.format(self.user_data_dir,
-                                                           datetime.now())
-            os.mkdir(setDataDir)
+            setDataDir = os.path.join(self.user_data_dir,
+                                      '{0:%Y%m%d_%H%M%S}'.format(datetime.now()),
+                                      '')
+            os.makedirs(setDataDir)
         return setDataDir
 
     

@@ -1,27 +1,26 @@
-import kivy
+import math
+import os
+import copy
 
+import kivy
 from kivy.app import App
 from kivy.uix.widget import Widget
-
+from PIL import Image as PILImage
+from PIL.ImageStat import Stat as imageStat
 from kivy.clock import Clock
-import os
 from kivy.graphics.vertex_instructions import Rectangle
 from kivy.graphics import Color
 from kivy.core.image import Image
 import kivy.metrics as metrics
-
 from kivy.properties import StringProperty,\
                             ListProperty,\
                             ReferenceListProperty,\
                             NumericProperty,\
                             ObjectProperty,\
                             BooleanProperty
-
 from kivy.graphics.instructions import InstructionGroup
 from analyser_util import channelIndexFromName 
-from PIL import Image as PILImage
-from PIL.ImageStat import Stat as imageStat
-import math
+import analyser_math as am
 
 class ColorReaderSpot(object):
     def __init__(self, idNo = None, type='std', conc=0.0):
@@ -38,6 +37,9 @@ class ColorReaderSpot(object):
         self.blankSpotColor = Color(0, 0, 0, 0.25)
         self.alpha = None
         self.exclude = False
+
+    def toCalibSpot(self):
+        return CalibSpot(self.conc, self.colorVal, self.blankVal, self.idNo, self.exclude)
 
 
     def updateText(self):
@@ -94,6 +96,26 @@ class ColorReaderSpot(object):
         self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
         self.instGrp.add(Rectangle(size=(size, size), pos=(x, y)))
 
+
+class CalibSpot(object):
+    def __init__(self, conc, colorVal, blankVal, idNo, exclude):
+        self.conc = conc
+        self.colorVal = colorVal
+        self.blankVal = blankVal
+        self.idNo = idNo
+        self.exclude = exclude
+
+def use_calibration_set(app, colorReader):
+    app.writeSpotsToConfig()
+    print 'len(app.calibSpots)', len(app.calibSpots)
+    for spot in colorReader.spots:
+        app.calibSpots.append(spot.toCalibSpot())
+    print 'len(app.calibSpots)', len(app.calibSpots)
+    app.calib = am.calculateACalibCurve(app.calibSpots, app.calcLog, app.measuredChannel, app.qConfCSV)
+    app.writeCalibFile(app.calibFile, app.calib)
+    am.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, app.measuredChannel, app.firstRaw)
+    app.firstRaw = False
+    app.goto_calib_results() 
 
 class ColorReader(Widget):
     spots = ListProperty([])

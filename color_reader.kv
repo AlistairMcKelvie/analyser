@@ -1,5 +1,5 @@
 #:import am analyser_math
-#:import copy copy.deepcopy
+#:import use_calibration_set color_reader.use_calibration_set
 <CalibrationScreen>:
     id: readerScreen
     canvas:
@@ -28,15 +28,7 @@
             halign: 'center'
             valign: 'middle'
             on_release:
-                app.writeSpotsToConfig()
-                print 'len(app.calibSpots)', len(app.calibSpots)
-                app.calibSpots.extend(copy(colorReader.spots))
-                print 'len(app.calibSpots)', len(app.calibSpots)
-                app.calib = am.calculateACalibCurve(app.calibSpots, app.calcLog, app.measuredChannel, app.qConfCSV)
-                app.writeCalibFile(app.calibFile, app.calib)
-                am.writeRawData(app.calib, app.rawFile, app.calibrationScreen.ids['colorReader'].spots, app.measuredChannel, app.firstRaw)
-                app.firstRaw = False
-                app.goto_calib_results()
+                use_calibration_set(app, colorReader)
         TextInput:
             text: str(colorReader.currentSpotSize)
             font_size: self.height * 0.8

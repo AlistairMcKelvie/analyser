@@ -1,7 +1,6 @@
 import math
 import csv
 from collections import namedtuple, OrderedDict
-from color_reader import ColorReaderSpot
 from analyser_util import channelIndexFromName 
 
 
@@ -31,7 +30,7 @@ def calculateConc(calib, alpha):
     if calib is None:
         return None
     else:
-        result = (alpha - calib.C) / calib.M
+        result = (float(alpha) - float(calib.C)) / float(calib.M)
         return result
 
 

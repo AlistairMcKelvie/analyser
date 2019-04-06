@@ -1,4 +1,5 @@
 #:import os os
+#:import main main
 <MainMenuScreen>:
     orientation: 'vertical'
     Button:
@@ -66,12 +67,7 @@
                 id: selectButton
                 text: 'Load'
                 on_release:
-                    app.calib = app.readCalibFile(calibChooser.selection[0])
-                    app.writeDir = os.path.dirname(calibChooser.selection[0]) + '/'
-                    app.rawFile = app.writeDir + 'raw.csv'
-                    app.calibFile = app.writeDir + 'calib.txt'
-                    app.samplesFile = app.writeDir + 'samples.csv' 
-                    app.goto_image_menu()
+                    if calibChooser.selection: main.select_calib(app, calibChooser)
             Button:
                 text: 'Back'
                 on_release: app.goto_main_menu() 
@@ -94,8 +90,7 @@
             size_hint_y: 0.1
             text: 'Load'
             on_release:
-                print 'filechooser selection', fileChooser.selection[0]
-                app.goto_color_reader_screen(fileChooser.selection[0])
+                if fileChooser.selection:app.goto_color_reader_screen(fileChooser.selection[0])
  
  
 <MsgPopup>:
